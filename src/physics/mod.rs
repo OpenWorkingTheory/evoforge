@@ -8,8 +8,10 @@
 pub mod body;
 pub mod noise;
 pub mod shape;
+pub mod terrain;
 pub mod world;
 
 pub use body::RigidBody;
 pub use shape::Shape;
-pub use world::{FractalField, Joint, TerrainModel, World, WorldParams};
+pub use terrain::{FractalField, TerrainModel};
+pub use world::{Joint, World, WorldParams};

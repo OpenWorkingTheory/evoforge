@@ -65,20 +65,53 @@ EvoForge is intentionally **not**:
 
 The simulator runs for hours or days on a server without ever creating a window. Visualization is a separate concern.
 
-## Prerequisites
+## Never used Rust or a terminal before?
 
-Rust **1.82** or later. Check your version with `rustup show`, or install via [rustup.rs](https://rustup.rs).
+You do not need to know either one, and you will never have to write any Rust. You need three things:
+
+1. **A terminal** — a window where you type a command, press Enter, and the program answers in text. On Windows: press Start, type `powershell`, press Enter. On macOS: press ⌘-Space, type `terminal`, press Enter.
+2. **Rust**, the language this is written in. Install it from [rustup.rs](https://rustup.rs) and accept the defaults.
+3. **This repository**, downloaded to your machine.
+
+Then move the terminal into the downloaded folder and run:
 
 ```bash
 cargo build --release
 ```
 
-On Windows the binary is `target\release\evo.exe`; on Unix `target/release/evo`. The examples below use the Unix form.
+`cargo` is Rust's build tool and came with step 2. This turns the source into a program, and takes a few minutes the first time. There is no compiler version to choose: `rust-toolchain.toml` pins the exact one this project is tested against, and `cargo` fetches it for you.
+
+**For parents and instructors:** the simulator makes no network connections and collects nothing. It writes only inside the project folder, under `runs/`. The optional browser viewer is the one exception — it loads its 3-D drawing library from a public CDN.
+
+## A short glossary
+
+| Word | What it means here |
+|---|---|
+| **organism** | One creature: a body of jointed blocks, plus a small brain driving those joints. |
+| **genome** | The numbers describing an organism. Copy them with small random changes and you get a slightly different creature. |
+| **brain** | A small fixed network turning what an organism senses into how hard it pushes each joint. It is inherited, not trained — there is no learning inside a lifetime. |
+| **generation** | One whole population, evaluated and scored. The best become the parents of the next. |
+| **fitness** | The single number each organism is scored on — usually how far it travelled. |
 
 ## Quick Start
 
+Run this one first. It takes about fifteen seconds:
+
 ```bash
-# Evolve. ~15 seconds for 100 generations of 100 organisms on a laptop.
+# Unix and macOS
+./target/release/evo run experiments/beginner-demo.toml
+
+# Windows (PowerShell)
+.\target\release\evo.exe run experiments/beginner-demo.toml
+```
+
+You will get one row of table per generation. Watch `mean` and `median` rather than `best`: the best score can only ever go up, so it is the middle of the distribution rising that shows the *population* getting better rather than one lucky creature. At the end it prints where it put the results — something like `runs/beginner-demo-1789524059/`. Open that in the [viewer](#viewer) and press **Champions** to watch what evolved, oldest first.
+
+The rest of the examples use the Unix form; on Windows substitute `.\target\release\evo.exe` as above.
+
+```bash
+# The fuller version of the same experiment: 100 generations of 100 organisms,
+# under a minute on a laptop.
 ./target/release/evo run experiments/first-walkers.toml
 
 # Stricter locomotion: signed +X progress and an upright bonus.
@@ -139,6 +172,14 @@ python3 -m http.server 8000 --directory viewer
 ```
 
 Open <http://localhost:8000>. Click **Load sample** for the checked-in two-part replay, or drag-drop any file from `runs/<run>/replays/`. **Open run folder…** takes the run directory itself and lists everything recorded — sortable by fitness, speed, actuation, joints lost, part count, generation, and more.
+
+Three buttons answer the questions people usually arrive with, without hunting for a filename:
+
+* **Best in run** — the highest-scoring organism that was recorded.
+* **Champions** — the best of each recorded generation, oldest first. With ▶ and **auto** on, this plays as a flipbook of the whole run: the clearest single view of evolution happening.
+* **Lineage** — the ancestors of whatever is on screen, oldest first. Only a generation's top few and a random sample are recorded, so a chain often stops early; the viewer says which ancestor it could not reach rather than quietly joining across the gap.
+
+The full sortable list stays underneath all three, and clicking any row leaves the sequence and hands you back manual control.
 
 ## Sensing
 

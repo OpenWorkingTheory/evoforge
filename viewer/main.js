@@ -12,16 +12,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // The `?v=` on these is a cache buster; see the note in index.html. Bump all
 // three together — a half-updated viewer is worse than a stale one.
-import { initLibrary } from './library.js?v=0.3.0';
+import { initLibrary } from './library.js?v=0.3.1';
 import {
   terrainHeight,
   finestFeature,
   terrainCheck,
   seedPair,
-} from './terrain.js?v=0.3.0';
+} from './terrain.js?v=0.3.1';
 
 /** Shown in the HUD, so "is my viewer current?" is answerable at a glance. */
-const VIEWER_VERSION = '0.3.0';
+const VIEWER_VERSION = '0.3.1';
 
 const POSE_STRIDE = 7;
 
@@ -418,7 +418,8 @@ function load(json, sourceName) {
   selecting = null;
 
   simTime = t0;
-  setPlaying(false);
+  setPlaying(advancing);
+  advancing = false;
   apply(simTime);
   frameCamera();
   document.title = `EvoForge — gen ${json.generation} org ${json.organism_id}`;
@@ -514,6 +515,12 @@ function tick(now) {
     if (simTime >= t1) {
       if (ui.loop.checked) {
         simTime = t0;
+      } else if (library.autoAdvance()) {
+        // A sequence moved on. Stop the clock here so this branch cannot fire
+        // again while the next trajectory is still being read; that load
+        // restarts playback itself.
+        simTime = t1;
+        setPlaying(false);
       } else {
         simTime = t1;
         setPlaying(false);
@@ -548,12 +555,16 @@ function readFile(file) {
 // ---------------------------------------------------------------- run library
 
 const library = initLibrary({
-  onSelect(entry) {
+  onSelect(entry, opts) {
     selecting = entry;
+    // A replay reached through a sequence starts playing on arrival; one picked
+    // by hand waits, because picking it is usually a prelude to scrubbing it.
+    advancing = !!(opts && opts.fromTour);
     readFile(entry.file);
   },
 });
 let selecting = null;
+let advancing = false;
 
 ui.openRun.addEventListener('click', () => ui.folder.click());
 

@@ -4,7 +4,7 @@
 //!
 //! 1. **Gradients are hashed, not tabulated.** The classic version indexes a
 //!    256-entry permutation table. A table would have to live inside
-//!    [`TerrainModel`](super::world::TerrainModel), which is `Copy` and is
+//!    [`TerrainModel`](super::terrain::TerrainModel), which is `Copy` and is
 //!    copied into every `World` — once per trial per organism. Hashing the
 //!    lattice coordinates with [`splitmix64`] instead costs a few integer
 //!    operations and leaves the model a handful of scalars.

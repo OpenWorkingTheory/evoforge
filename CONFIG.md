@@ -10,6 +10,7 @@ The load-bearing rule throughout: **off is exact.** A feature disabled by settin
 
 | Experiment | What it demonstrates |
 |---|---|
+| `beginner-demo.toml` | `first-walkers` shrunk to finish in about fifteen seconds, recording every generation so the viewer's **Champions** sequence plays as a flipbook. Start here |
 | `first-walkers.toml` | Minimal setup: flat terrain, distance objective, 100 organisms |
 | `directed-walkers.toml` | Signed +X progress and an upright bonus — harder to satisfy by tumbling |
 | `shaped-walkers.toml` | `directed-walkers` with all five part shapes enabled |

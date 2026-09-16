@@ -6,7 +6,7 @@
 //! height field, and again before writing "roughly" in a comment.
 //!
 //! Not part of the suite: it reports, it does not assert. What the suite pins is
-//! in `physics::world::tests`.
+//! in `physics::terrain::tests`.
 
 use evoforge::math::Real;
 use evoforge::physics::{FractalField, TerrainModel};

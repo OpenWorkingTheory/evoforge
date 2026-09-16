@@ -1,0 +1,7 @@
+# Pinning the exact compiler is part of the determinism story: tests/golden.rs
+# compares committed constants across three platforms, so the compiler is an
+# input to that comparison, not an incidental detail. It also means anyone who
+# clones this repo gets a known-good toolchain without having to pick a version.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]

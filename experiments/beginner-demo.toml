@@ -1,0 +1,104 @@
+# first-walkers, shrunk until it finishes while you are still watching.
+#
+# Same physics, same body plan, same objective as first-walkers.toml — the only
+# things changed are how many organisms there are, how many generations they get,
+# and how often a generation is recorded. It is the experiment to run first:
+# a few seconds of CPU, and a run directory you can open in the viewer.
+#
+# It is small enough that luck matters. Sixty organisms over sixty generations
+# will usually improve, but not always, and the `mean` column wandering down for
+# a generation or two is evolution rather than a bug. Run first-walkers.toml for
+# the fuller version.
+#
+# Measured on one laptop core-set: 3600 organisms in about 13 seconds, best
+# distance rising from roughly 1 m to 5.8 m. Your numbers will differ.
+#
+# What to watch: the per-generation table's `mean` and `median`, not just
+# `best` — with elitism `best` can only ever go up, so it is the middle of the
+# distribution moving that shows the population as a whole is learning.
+
+[experiment]
+name = "beginner-demo"
+seed = 20260905
+output_dir = "runs"
+
+[evolution]
+# The shrink: 60 x 60 instead of 100 x 100, which is a little over a third of
+# the work. Elitism and tournament size are unchanged, and still sensible at
+# this population.
+population_size = 60
+generations = 60
+elite_count = 2
+tournament_size = 4
+crossover_rate = 0.7
+immigrant_rate = 0.02
+
+[body]
+min_parts = 2
+max_parts = 6
+min_half_extent = 0.08
+max_half_extent = 0.35
+density = 250.0
+min_joint_limit = 0.3
+max_joint_limit = 1.4
+max_motor_speed = 6.0
+max_motor_torque = 120.0
+hinge_probability = 0.85
+
+[brain]
+hidden = 10
+init_sigma = 0.8
+weight_limit = 8.0
+
+[mutation]
+weight_rate = 0.08
+weight_sigma = 0.25
+weight_reset_rate = 0.05
+size_rate = 0.05
+size_sigma = 0.05
+attach_rate = 0.05
+attach_sigma = 0.15
+joint_limit_rate = 0.05
+joint_limit_sigma = 0.2
+joint_kind_rate = 0.02
+joint_axis_rate = 0.03
+motor_rate = 0.05
+motor_sigma = 0.15
+add_part_rate = 0.06
+remove_part_rate = 0.05
+
+[simulation]
+# Timestep defaults to 1/120 s. Do not write a rounded decimal here: that
+# is not exactly 1/120 and would change the step count.
+duration = 8.0
+control_hz = 20.0
+solver_iterations = 10
+settle_time = 0.5
+
+[environment]
+terrain = "flat"
+gravity = 9.81
+friction = 0.8
+restitution = 0.0
+linear_damping = 0.02
+angular_damping = 0.05
+
+[fitness]
+objective = "distance"
+energy_penalty = 0.0
+upright_bonus = 0.0
+
+[recording]
+# Every generation, not every tenth: twenty recorded generations is what makes
+# the viewer's "Champions" sequence play as a flipbook of evolution rather than
+# a couple of stills. It costs a second evaluation of four organisms per
+# generation, which at this size is nothing.
+top_n = 3
+random_samples = 1
+record_hz = 30.0
+every_generations = 1
+store_genomes = true
+
+[checkpoint]
+every_generations = 10
+on_finish = true

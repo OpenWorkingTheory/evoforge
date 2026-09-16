@@ -95,6 +95,81 @@ const PRESETS = [
   { label: 'Latest', sort: 'generation', dir: -1 },
 ];
 
+// ---------------------------------------------------------------- sequences
+//
+// The list above answers "show me everything, my way". These answer the three
+// questions people actually arrive with — what was the best, how did it get
+// better, and where did this one come from — without having to know that the
+// answer is a particular file. They are built from headers already in memory,
+// so they cost nothing and need no support from the recorder.
+
+/** The single highest-scoring recorded organism. */
+export function bestInRun(entries) {
+  if (!entries.length) return { items: [] };
+  return { items: [entries.reduce((a, b) => (b.fitness > a.fitness ? b : a))] };
+}
+
+/** The best recorded organism of each generation, oldest first. */
+export function championsByGeneration(entries) {
+  const best = new Map();
+  for (const e of entries) {
+    const held = best.get(e.generation);
+    if (!held || e.fitness > held.fitness) best.set(e.generation, e);
+  }
+  return { items: [...best.values()].sort((a, b) => a.generation - b.generation) };
+}
+
+/**
+ * One organism's recorded ancestry, oldest first.
+ *
+ * Only each generation's top few and a random sample are recorded, so a chain
+ * usually stops short: the moment an ancestor was not recorded, its own parents
+ * are unknown too, and the trail genuinely ends. That is reported rather than
+ * hidden — a lineage is watched to see what changed from one generation to the
+ * next, and silently splicing across a six-generation hole would misrepresent
+ * exactly the thing being looked at.
+ */
+export function lineageOf(entries, start) {
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  const items = [];
+  const seen = new Set();
+  let cur = start;
+  let missing = null;
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    items.push(cur);
+    const parents = (cur.parents || []).filter(Boolean);
+    if (!parents.length) break; // a founder: the chain is complete
+    const known = parents.find((p) => byId.has(p));
+    if (known === undefined) {
+      missing = parents[0];
+      break;
+    }
+    cur = byId.get(known);
+  }
+  items.reverse();
+  return { items, missing };
+}
+
+/** The guided sequences offered above the list. */
+const TOURS = [
+  {
+    label: 'Best in run',
+    title: 'The single highest-scoring organism that was recorded',
+    build: bestInRun,
+  },
+  {
+    label: 'Champions',
+    title: 'The best of each recorded generation, oldest first — evolution as a flipbook',
+    build: championsByGeneration,
+  },
+  {
+    label: 'Lineage',
+    title: "The selected organism's recorded ancestors, oldest first",
+    build: null, // needs a starting organism; built at click time
+  },
+];
+
 const el = (id) => document.getElementById(id);
 
 /** Read `file` up to the start of its trajectory and parse that as JSON. */
@@ -160,11 +235,18 @@ export function initLibrary({ onSelect }) {
   let activeId = null;
   let activePreset = 'Best';
 
+  // The active sequence, if any: { label, items, at, note }.
+  let tour = null;
+
   const list = el('lib-list');
   const sortSel = el('lib-sort');
   const groupSel = el('lib-group');
   const filterInput = el('lib-filter');
   const presets = el('lib-presets');
+  const tourBar = el('tour-bar');
+  const tourPos = el('tour-pos');
+  const tourNote = el('tour-note');
+  const tourAdvance = el('tour-advance');
 
   for (const s of SORTS) sortSel.add(new Option(s.label, s.key));
   for (const g of GROUPS) groupSel.add(new Option(g.label, g.key));
@@ -186,6 +268,78 @@ export function initLibrary({ onSelect }) {
     });
     presets.appendChild(b);
   }
+
+  /** Start a sequence and play its first entry. */
+  function startTour(label, built, note) {
+    if (!built.items.length) {
+      tour = null;
+      renderTour();
+      return;
+    }
+    tour = { label, items: built.items, at: 0, note: note || '' };
+    renderTour();
+    play(0);
+  }
+
+  /** Move to `i` in the current sequence and hand that replay to the viewer. */
+  function play(i) {
+    if (!tour) return;
+    tour.at = Math.max(0, Math.min(i, tour.items.length - 1));
+    const e = tour.items[tour.at];
+    activeId = e.id;
+    renderTour();
+    render();
+    onSelect(e, { fromTour: true });
+  }
+
+  function endTour() {
+    tour = null;
+    renderTour();
+    render();
+  }
+
+  function renderTour() {
+    tourBar.hidden = !tour;
+    for (const b of tourPicks.children) {
+      b.classList.toggle('on', !!tour && b.dataset.tour === tour.label);
+    }
+    if (!tour) return;
+    const e = tour.items[tour.at];
+    tourPos.textContent =
+      `${tour.label} · ${tour.at + 1}/${tour.items.length} · gen ${e.generation}`;
+    tourNote.textContent = tour.at === 0 && tour.note ? tour.note : '';
+    tourNote.hidden = !tourNote.textContent;
+  }
+
+  const tourPicks = el('tour-picks');
+  for (const t of TOURS) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.dataset.tour = t.label;
+    b.textContent = t.label;
+    b.title = t.title;
+    b.addEventListener('click', () => {
+      if (!entries.length) return;
+      if (t.label === 'Lineage') {
+        // Trace whatever is on screen; failing that, the best in the run, since
+        // that is the lineage anyone asking the question most likely wants.
+        const seed = entries.find((e) => e.id === activeId) || bestInRun(entries).items[0];
+        if (!seed) return;
+        const built = lineageOf(entries, seed);
+        const note = built.missing
+          ? `chain ends here — ancestor ${built.missing} was not recorded`
+          : 'traced back to a founder';
+        startTour(t.label, built, `org ${seed.id}: ${note}`);
+      } else {
+        startTour(t.label, t.build(entries), '');
+      }
+    });
+    tourPicks.appendChild(b);
+  }
+
+  el('tour-prev').addEventListener('click', () => play(tour ? tour.at - 1 : 0));
+  el('tour-next').addEventListener('click', () => play(tour ? tour.at + 1 : 0));
+  el('tour-exit').addEventListener('click', endTour);
 
   sortSel.addEventListener('change', () => {
     sortKey = sortSel.value;
@@ -269,6 +423,10 @@ export function initLibrary({ onSelect }) {
         `<div class="lib-meta">${num(e.m.displacement_x)} m · ${num(e.speed)} m/s · ` +
         `${num(e.m.upright_seconds, 1)} s up · ${e.parts} parts · ${e.shapeLabel}${broke}</div>`;
       item.addEventListener('click', () => {
+        // Picking from the list by hand means leaving the sequence, rather than
+        // leaving a stale position behind to surprise the next Next.
+        tour = null;
+        renderTour();
         activeId = e.id;
         render();
         onSelect(e);
@@ -282,6 +440,17 @@ export function initLibrary({ onSelect }) {
     setActive(id) {
       activeId = id;
       render();
+    },
+    /**
+     * Step to the next entry of the running sequence, if one is running and the
+     * viewer is set to advance on its own. Returns whether it did, so the
+     * caller can fall back to its normal end-of-replay behaviour.
+     */
+    autoAdvance() {
+      if (!tour || !tourAdvance.checked) return false;
+      if (tour.at >= tour.items.length - 1) return false;
+      play(tour.at + 1);
+      return true;
     },
     /**
      * Ingest a directory chosen with a directory picker. Only the manifest and

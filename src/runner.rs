@@ -86,7 +86,7 @@ pub fn run(cfg: &Config, opts: &RunOptions) -> Result<RunSummary> {
         let elapsed = elapsed_before + started.elapsed().as_secs_f64();
         let summary = stats::summarise(&population, eval_seconds, elapsed);
         if !opts.quiet {
-            if summary.generation % 20 == 0 && summary.generation > 0 {
+            if summary.generation.is_multiple_of(20) && summary.generation > 0 {
                 println!("{}", GenerationStats::TABLE_HEADER);
             }
             println!("{}", summary.to_table_row());

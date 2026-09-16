@@ -40,6 +40,24 @@ fn main() {
         });
 
         println!("\n=== {run} ({}) ===", serde_json::to_string(&cfg.environment.terrain).unwrap());
+
+        // `caution` throttles the motors only where joint damage exists: with
+        // `body.joint_endurance = 0`, `sim::evaluate` hard-wires drive to 1 so
+        // that the whole feature is exactly off. The lever this probe pulls is
+        // then connected to nothing — every corpse scores precisely what its
+        // living twin scored, and the table below would report "100% of the
+        // distance is free" while having measured nothing at all. Say so
+        // instead: a gate that cannot run is not a gate that passed.
+        if !cfg.joints_can_break() {
+            println!(
+                "  not measurable here: body.joint_endurance is 0, so motors cannot be\n  \
+                 switched off through `caution` and a corpse is identical to the living\n  \
+                 organism. Give the experiment a non-zero joint_endurance (see\n  \
+                 experiments/brittle-walkers.toml) to make this gate meaningful."
+            );
+            continue;
+        }
+
         println!("   id |  alive fit   heading |   dead fit   heading | dead share");
 
         let mut alive_total = 0.0;
