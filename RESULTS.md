@@ -41,20 +41,34 @@ They are observation instruments. Their output belongs in the description of a r
 
 ## Terrain A/B: What Each Ground Selects For
 
-Three arms of `animals.toml`, identical but for `[environment]`, same seed, 30 generations of 100:
+Three arms of `animals.toml`, identical but for `[environment]`, same seed, 300 generations of 100. Every arm starts from 4.52 parts and a median under 1.1 m. Three depths are shown in every cell — **generation 29 / 99 / 299** — because several of these readings reverse between them:
 
-| arm | best | mean | median | median gen 0 → 29 | mean parts 0 → 29 | distinct structures |
-|---|---|---|---|---|---|---|
-| flat | 9.18 | 6.65 | 8.94 | 1.07 → 8.94 | 4.52 → 2.12 | 21 / 100 |
-| rough | 7.53 | 4.21 | 4.98 | 0.86 → 4.98 | 4.52 → 3.14 | 46 / 100 |
-| fractal | 3.97 | 2.44 | 2.53 | 0.80 → 2.53 | 4.52 → 7.82 | 97 / 100 |
+| arm | best | mean | median | mean parts | distinct structures |
+|---|---|---|---|---|---|
+| flat | 9.18 / 12.45 / 12.75 | 6.65 / 7.79 / 7.58 | 8.94 / 11.62 / 10.80 | 2.12 / 4.09 / 4.12 | 21 / 40 / 54 |
+| rough | 7.53 / 8.92 / 9.20 | 4.21 / 5.67 / 5.76 | 4.98 / 7.42 / 7.35 | 3.14 / 2.97 / 3.06 | 46 / 35 / 34 |
+| fractal | 3.97 / 6.71 / 7.53 | 2.44 / 3.53 / 3.63 | 2.53 / 3.84 / 3.53 | 7.82 / 7.92 / 7.85 | 97 / 90 / 86 |
 
-Scores fall monotonically with difficulty. That is the result the earlier comparison (voided by the solver bug) could not produce: on the pre-0.3.0 solver the fractal run scored 28.1 against the sine field's 12.0 — harder ground scoring more than twice as high. The median rises in every arm, so all three populations are improving as populations rather than carrying one lucky champion.
+A single generation's median is noisy — the flat arm reads 11.37, 8.39 and 11.62 at generations 80, 90 and 99 — so read the trend rather than the cell.
+
+**All three arms plateau, and not at the same time.** Best-fitness gain per 50-generation block:
+
+| arm | 0–50 | 50–100 | 100–150 | 150–200 | 200–250 |
+|---|---|---|---|---|---|
+| flat | +8.78 | +1.35 | +0.22 | +0.04 | +0.02 |
+| rough | +6.62 | +0.33 | +0.23 | +0.01 | +0.04 |
+| fractal | +3.92 | +0.73 | +0.52 | +0.30 | +0.00 |
+
+Flat and rough are finished by about generation 150; the fractal arm keeps finding improvements for roughly sixty generations longer before it stops too. Harder ground buys a longer runway, not an open-ended one, and no arm gains more than +0.03 after generation 250 — worth knowing before spending a day of CPU on a thousand generations.
+
+Medians do *not* decay after the plateau, which single generations make it easy to believe: averaged over twenty-generation windows the flat arm reads 10.09, 11.16, 10.59, 10.00, 10.47 from generation 80 to 299. What does keep moving is diversity. Flat goes from 17 distinct structures at generation 40 to 40 at 99 and 54 at 299, long after its fitness stops improving — once selection saturates, structures drift apart without being punished for it.
+
+Scores fall monotonically with difficulty at every depth measured: 30, 100 and 300 generations. That is the result the earlier comparison (voided by the solver bug) could not produce: on the pre-0.3.0 solver the fractal run scored 28.1 against the sine field's 12.0 — harder ground scoring more than twice as high. The median rises in every arm, so all three populations are improving as populations rather than carrying one lucky champion.
 
 **What the three grounds actually produce**, watched in the viewer:
 
-* **Flat** selects small machines that *vibrate*. Two parts, buzzing, and that is enough — nothing in a flat plane plus a distance objective asks for more.
-* **Rough** selects slightly larger bodies and visibly less vibration. A 13 cm ripple is enough to stop buzzing from working as well as it does on glass.
+* **Flat** selects small machines that *vibrate* — at first. Two parts, buzzing, and that is enough for the first forty-odd generations; nothing in a flat plane plus a distance objective asks for more until the buzzer has been optimised out. By generation 100 the same arm is back to four parts and still improving, so read this as the early answer on flat ground rather than the final one.
+* **Rough** selects visibly less vibration: a 13 cm ripple is enough to stop buzzing working as well as it does on glass. It also selects larger bodies than flat does — 3.14 parts against 2.12 at generation 29 — but that gap closes and then inverts, with flat at 4.09 parts against rough's 2.97 by generation 99. Body size is not a clean proxy for terrain difficulty between these two; only the fractal arm separates cleanly.
 * **Fractal** selects large machines — nearly the eight-part maximum — that are not obviously good at moving themselves. Roughly half the population recorded at generation 20 moves *just enough to fall off a nearby drop* and then stops. Organism 2032 is the clearest case: 96% of its travel comes in the first half of the measured window while it descends 0.34 m, after which it spends six seconds thrashing in place — path length still growing, displacement flat, 13,337 units of actuation spent on neither. On ground with 5.6 m of relief and cliffs to 82 degrees, that is a perfectly sound reading of "travel as far as you can".
 
   It is not the whole population, and at generation 20 it is not winning: the other half move steadily, two of the seven recorded organisms net *climb*, and the steady movers outscore the fallers (1.67 m against 1.31 m and below). So falling reads as a cheap competing optimum that caps out low rather than as the dominant strategy.
@@ -65,13 +79,15 @@ None of those three is a defect. They are correct answers to the question actual
 
 **The corpse gate passes**, which is what makes the comparison valid:
 
-| arm | champion alive | motors off | share |
-|---|---|---|---|
-| flat | 6.28 m | −0.14 m | −2% |
-| rough | 2.96 m | 0.20 m | 7% |
-| fractal | 1.54 m | 0.34 m | 22% |
+Each cell is champion alive / motors off / share:
 
-Against 97% before the split-impulse fix. The gate is the absolute figure — under 2 m in eight seconds — and 0.34 m clears it comfortably; the 22% share is inflated by a small denominator, because locomotion on that ground is only 1.54 m to begin with.
+| arm | 30 generations | 100 generations | 300 generations |
+|---|---|---|---|
+| flat | 6.28 m / −0.14 m / −2% | 10.75 / 0.02 / 0% | 11.14 / −0.01 / −0% |
+| rough | 2.96 / 0.20 / 7% | 7.28 / −0.20 / −3% | 7.60 / −0.25 / −3% |
+| fractal | 1.54 / 0.34 / 22% | 5.01 / 0.81 / 16% | 6.05 / 0.79 / 13% |
+
+Against 97% before the split-impulse fix. The gate is the absolute figure — under 2 m in eight seconds — and every arm clears it at all three depths. The 22% share at 30 generations was inflated by a small denominator, because locomotion on that ground was only 1.54 m to begin with; the denominator grows to 5.01 m and then 6.05 m while the free distance stays near 0.8 m, so the share falls to 16% and then 13%. That is the caveat resolving itself as locomotion improves, not an arm getting worse.
 
 **One blind spot in that probe.** It measures free distance from where the organism *starts*. An organism that spends a little actuation getting itself to a cliff edge and then falls is not doing anything a motors-off corpse can imitate, because a corpse never reaches the edge. The figures above are a lower bound on how much of the fractal score the terrain is handing over, not a full accounting.
 
@@ -83,9 +99,22 @@ Against 97% before the split-impulse fix. The gate is the absolute figure — un
 | 4 | 0.01 m | −0.04 m | 0.10 m |
 | 8 | 0.04 m | 0.04 m | 0.17 m |
 
-Drift does rise with part count on the fractal field, but going from four parts to eight buys 0.07 m against a spread of roughly 1.5 m between the population mean and the best — about 5% of what selection is working on. And on flat and rough, where drift is essentially zero, part count *collapses* rather than growing. So the growth to 7.8 parts reads as a real finding about hard ground rather than as bodies farming the solver.
+Drift does rise with part count on the fractal field, but going from four parts to eight buys 0.07 m against a spread of roughly 1.5 m between the population mean and the best — about 5% of what selection is working on. So the growth to 7.8 parts reads as a real finding about hard ground rather than as bodies farming the solver.
 
-**Cost, decomposed.** At equal body size (generation 0, 4.52 parts in every arm) the terrain alone costs 5.6x from flat to fractal and 2.1x from rough to fractal. The rest is endogenous: hard ground evolves bigger bodies and bigger bodies cost more to simulate, so the fractal arm got 2x slower over the run while the flat arm got 1.5x faster. End to end the arms differed 11x in wall clock.
+**Half of that finding did not survive a longer run.** The fractal half is solid: part count reaches 7.74 by generation 20, sits at 7.92 at generation 100, and diversity holds at 90–97 distinct structures throughout. Hard ground wants big bodies, immediately and permanently.
+
+The flat half was an artefact of stopping at 30. Flat does not collapse to small bodies — it dips and recovers:
+
+| generation | 0 | 10 | 40 | 50 | 70 | 99 |
+|---|---|---|---|---|---|---|
+| mean parts | 4.52 | 2.11 | 2.08 | 3.06 | 4.01 | 4.09 |
+| distinct structures | 100 | 27 | 17 | 33 | 50 | 40 |
+
+That is a selective sweep, not a collapse. A cheap two-part vibrator takes over by generation 10 and holds until about 45 — which is where the first version of this section stopped looking — and body size then climbs back in discrete steps while fitness keeps rising, 9.50 at generation 40 to 12.45 at generation 99. Diversity recovers with it, 17 distinct structures to 40. Throughput corroborates it independently, since bigger bodies cost more to simulate: the flat arm runs at 1.5x its generation-0 rate at generation 29 and is back to 1.05x by generation 99.
+
+What survives is the *ordering* — fractal bodies are larger than flat or rough ones at every generation measured — not the claim that easy ground permanently selects for small ones.
+
+**Cost, decomposed.** At equal body size (generation 0, 4.52 parts in every arm) the terrain alone costs 5.6x from flat to fractal and 2.1x from rough to fractal. The rest is endogenous: hard ground evolves bigger bodies and bigger bodies cost more to simulate, so the fractal arm got 2x slower over the run while the flat arm got 1.5x faster. End to end the arms differed 11x in wall clock. Neither trend continues: by generation 100 both arms are back near their own generation-0 rate — flat 1.05x, fractal 0.92x — because both part-count curves flatten out, and the end-to-end spread narrows to 8.2x.
 
 | arm | generation 0 | generation 29 |
 |---|---|---|
@@ -93,26 +122,28 @@ Drift does rise with part count on the fractal field, but going from four parts 
 | rough | 30.6 organisms/s @ 4.52 parts | 38.9 @ 3.14 parts |
 | fractal | 14.7 organisms/s @ 4.52 parts | 7.4 @ 7.82 parts |
 
-**Read this as a direction check, not a settled comparison.** Thirty generations on one seed, against the eighty of the original A/B, with no repetition. The ordering and the corpse gate are solid; the part-count finding deserves a longer run before it is treated as established.
+**Still one seed, with no repetition.** The longer run this section used to ask for has been done twice over, to 100 and then 300 generations, and it settled the part-count question by overturning half of it. The ordering and the corpse gate survived both depths; the "flat collapses" reading did not. What remains untested is whether any of it holds on a different seed — every figure here comes from `seed = 20260906`. Treat the ordering as established, the magnitudes as one sample, and re-read any finding that rests on a single stopping point.
 
 ---
 
-## What 150 Generations on the Fractal Field Actually Does
+## What a Long Run on the Fractal Field Actually Does
 
-The fractal arm was extended to generation 150 to find out whether it plateaus. It does not, and the answer changes what the numbers above appear to say.
+The fractal arm was extended to generation 150 to find out whether it plateaus, and later to 300 to find out where. It does not plateau by 150, and the answer changes what the numbers above appear to say.
 
-| | gen 29 | gen 149 |
-|---|---|---|
-| best fitness | 3.97 | **7.24** |
-| median fitness | 2.53 | 4.14 |
-| median travel, recorded organisms | 1.31 m | **6.58 m** |
-| fall-and-stop share of recorded organisms | 3 of 7 | **0–1 of 7** |
-| median temporal split | 51% | 45% |
-| distance covered dead (corpse gate) | 22% | 13% |
+| | gen 29 | gen 149 | gen 299 |
+|---|---|---|---|
+| best fitness | 3.97 | **7.24** | **7.53** |
+| median fitness | 2.53 | 4.14 | 3.53 |
+| median travel, recorded organisms | 1.31 m | **6.58 m** | **7.22 m** |
+| fall-and-stop share of recorded organisms | 3 of 7 | **0–1 of 7** | **0 of 7** |
+| median temporal split | 51% | 45% | 48% |
+| distance covered dead (corpse gate) | 22% | 13% | 13% |
 
 **The crude strategy dissolved on its own.** The fall-and-stop organisms of generation 20 are essentially gone by generation 120, without any intervention: the median temporal split settles at 45%, which is what a gait looks like, and median travel among recorded organisms rises eighteenfold to 6.58 m — level with what *flat* ground produced. Best fitness gains per 30-generation block run +2.21, +0.27, +0.36, +0.43, so progress is decelerating but had not stopped at 150.
 
-**A subtler bias entrenched instead.** At generation 149 every organism in the population ends lower than it started — 100 of 100, spanning −0.010 to −0.725 m — and fitness now correlates with elevation change at **−0.60**. At generation 29 that correlation was −0.15. So while the obvious downhill strategy was disappearing, selection under a pure distance objective was quietly getting *better* at travelling downhill: champions now cover about ten metres of ground per metre of height they give up, a ratio stable since generation 40.
+**It stops at about generation 210.** Carrying the same run to 300 continues that sequence +0.18, +0.12, +0.00, +0.00: the last improvement of any size lands around generation 210, and the arm holds 7.53 from there to 300. Everything the gate measures holds across those extra 150 generations — no fall-and-stop organisms among the recorded seven, a temporal split of 48%, and a corpse-gate share steady at 13% — so the population is not decaying, it is finished. Flat and rough stop earlier still, around 150. The fractal field buys about sixty extra generations of progress, not an open-ended supply.
+
+**A subtler bias entrenched instead, and kept deepening.** At generation 149 every organism in the population ends lower than it started — 100 of 100, spanning −0.010 to −0.725 m — and fitness correlates with elevation change at **−0.60**. At generation 29 that correlation was −0.15; by generation 299 it is **−0.75**, with 99 of 100 organisms still ending lower than they started. The bias goes on strengthening for ninety generations after best fitness has stopped moving, which is the clearest sign available that it is the objective being satisfied rather than the search still working. So while the obvious downhill strategy was disappearing, selection under a pure distance objective was quietly getting *better* at travelling downhill: champions now cover about ten metres of ground per metre of height they give up, a ratio stable since generation 40.
 
 That is a specification finding rather than an optimisation one. Distance on sloped ground pays for descent, and 150 generations is long enough for that to become the population's defining characteristic. It is what [FITNESS_PLAN.md](FITNESS_PLAN.md) exists to address — not by penalising the behaviour, but by asking a question that elevation is part of the answer to.
 
