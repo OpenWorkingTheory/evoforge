@@ -42,7 +42,7 @@ recorded, bit for bit — no second build needed, because the recorded numbers a
 the baseline. Run it over `runs/` after anything that touches the evaluation
 path. It exits non-zero on a mismatch.
 
-The viewer (`viewer/`) is plain HTML + JS with Three.js from a CDN — no build step. Serve it with `python -m http.server 8000 --directory viewer`.
+The viewer (`viewer/`) is plain HTML + JS with Three.js from a CDN — no build step. Serve it with `python viewer/serve.py` (stdlib only; also lists `runs/` for the browser and works from a phone on the LAN). Its checks are `python viewer/serve_check.py`, `node viewer/library_check.mjs`, `node viewer/terrain_check.mjs`.
 
 ## Architecture
 

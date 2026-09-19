@@ -10,18 +10,27 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-// The `?v=` on these is a cache buster; see the note in index.html. Bump all
-// three together — a half-updated viewer is worse than a stale one.
-import { initLibrary } from './library.js?v=0.3.1';
+// The `?v=` on these is a cache buster; see the note in index.html. Bump them
+// all together, and the one in index.html — a half-updated viewer is worse
+// than a stale one.
+import { initLibrary } from './library.js?v=0.4.0';
+import { listRuns, openRun } from './remote.js?v=0.4.0';
 import {
   terrainHeight,
   finestFeature,
   terrainCheck,
   seedPair,
-} from './terrain.js?v=0.3.1';
+} from './terrain.js?v=0.4.0';
 
 /** Shown in the HUD, so "is my viewer current?" is answerable at a glance. */
-const VIEWER_VERSION = '0.3.1';
+const VIEWER_VERSION = '0.4.0';
+
+// A phone: fingers instead of a pointer, and a GPU that would rather not draw
+// a 361k-vertex ground under soft shadows at 3x. `NARROW` is live because a
+// phone turns sideways; `COARSE` is read once because the render settings it
+// gates are set once.
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const NARROW = matchMedia('(max-width: 700px)');
 
 const POSE_STRIDE = 7;
 
@@ -38,13 +47,14 @@ const ui = {
   scrub: el('scrub'), track: el('track-measured'), play: el('play'),
   restart: el('restart'), speed: el('speed'), readout: el('readout'),
   openRun: el('open-run'), folder: el('folder'), toggleLib: el('toggle-library'),
-  library: el('library'), trackEl: el('track'),
+  library: el('library'), trackEl: el('track'), serverRuns: el('server-runs'),
+  libClose: el('lib-close'),
 };
 
 // ---------------------------------------------------------------- scene setup
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 ui.host.appendChild(renderer.domElement);
@@ -66,7 +76,7 @@ scene.add(new THREE.HemisphereLight(0x9fb4d0, 0x2a2d33, 1.5));
 const sun = new THREE.DirectionalLight(0xffffff, 2.0);
 sun.position.set(6, 10, 5);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(COARSE ? 1024 : 2048, COARSE ? 1024 : 2048);
 const sc = sun.shadow.camera;
 sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14; sc.near = 0.5; sc.far = 45;
 scene.add(sun, sun.target);
@@ -138,7 +148,10 @@ const ROUGH_SPAN = 90;
  *  segments is 50 mm each, against 160 mm walls. An organism that has to climb
  *  a wall every twenty metres is not going to cross ninety of them. */
 const TERRACED_SPAN = 30;
-const MAX_GROUND_SEGMENTS = 600;
+/** Halved on a phone: 100 mm per segment across the terraced sheet still
+ *  resolves a 160 mm riser, and the vertex count falls by four. The HUD's
+ *  "drawn as" line reports whichever was actually built. */
+const MAX_GROUND_SEGMENTS = COARSE ? 300 : 600;
 /** `TerrainModel`'s variants. Anything else came from a newer evoforge. */
 const KNOWN_TERRAIN = new Set(['flat', 'rough', 'fractal']);
 const grid = new THREE.GridHelper(80, 80, 0x8b96a8, 0x5b6474); // 1 m cells
@@ -166,6 +179,7 @@ let simTime = 0;
 let playing = false;
 let lastTick = 0;
 let followFrom = null; // last root position while "follow root" is on
+let needsRender = true; // something changed since the last frame drawn
 
 const qA = new THREE.Quaternion();
 const qB = new THREE.Quaternion();
@@ -435,6 +449,7 @@ function frameCamera() {
   camera.position.copy(centre).add(new THREE.Vector3(radius * 1.6, radius * 1.3, radius * 2.6));
   controls.update();
   followFrom = ui.follow.checked ? centre.clone() : null;
+  needsRender = true;
 }
 
 // ---------------------------------------------------------------- playback
@@ -498,6 +513,7 @@ function apply(t) {
   ui.readout.innerHTML =
     `t = <b>${t.toFixed(3)} s</b> / ${t1.toFixed(2)} s · ` +
     `frame ${i + 1} / ${frames.length} · ${phase}`;
+  needsRender = true;
 }
 
 function setPlaying(on) {
@@ -530,26 +546,36 @@ function tick(now) {
   }
   lastTick = now;
 
-  controls.update();
-  renderer.render(scene, camera);
+  // Draw only when something moved. Paused and untouched, a phone would
+  // otherwise spend its battery redrawing the same frame sixty times a second.
+  // OrbitControls.update() reports whether the camera changed, damping included.
+  const moved = controls.update();
+  if (playing || moved || needsRender) {
+    needsRender = false;
+    renderer.render(scene, camera);
+  }
 }
 
 // ---------------------------------------------------------------- wiring
 
-function readFile(file) {
-  const reader = new FileReader();
-  reader.onerror = () => showError(`could not read ${file.name}`);
-  reader.onload = () => {
-    let json;
-    try {
-      json = JSON.parse(reader.result);
-    } catch (e) {
-      showError(`${file.name}: not valid JSON (${e.message})`);
-      return;
-    }
-    load(json, file.name);
-  };
-  reader.readAsText(file);
+// `file` is a File from a picker or a drop, or one of remote.js's stand-ins:
+// both answer `text()`, which is the whole reason the stand-ins exist.
+async function readFile(file) {
+  let text;
+  try {
+    text = await file.text();
+  } catch (e) {
+    showError(`could not read ${file.name}: ${e.message}`);
+    return;
+  }
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    showError(`${file.name}: not valid JSON (${e.message})`);
+    return;
+  }
+  load(json, file.name);
 }
 
 // ---------------------------------------------------------------- run library
@@ -560,17 +586,23 @@ const library = initLibrary({
     // A replay reached through a sequence starts playing on arrival; one picked
     // by hand waits, because picking it is usually a prelude to scrubbing it.
     advancing = !!(opts && opts.fromTour);
+    // On a phone the list covers the whole stage, so picking something has
+    // to get out of the way of it.
+    if (NARROW.matches) showLibrary(false);
     readFile(entry.file);
   },
 });
 let selecting = null;
 let advancing = false;
 
-ui.openRun.addEventListener('click', () => ui.folder.click());
+function showLibrary(on) {
+  ui.library.hidden = !on;
+  ui.toggleLib.textContent = on ? 'Hide list' : 'Show list';
+  resize();
+}
 
-ui.folder.addEventListener('change', async (e) => {
-  const files = e.target.files;
-  if (!files || !files.length) return;
+/** Ingest a run's files — from the folder picker or from the server. */
+async function openRunFiles(files) {
   ui.library.hidden = false;
   ui.toggleLib.hidden = false;
   ui.toggleLib.textContent = 'Hide list';
@@ -587,15 +619,58 @@ ui.folder.addEventListener('change', async (e) => {
     );
   }
   resize();
+}
+
+ui.openRun.addEventListener('click', () => ui.folder.click());
+
+ui.folder.addEventListener('change', async (e) => {
+  const files = e.target.files;
+  if (!files || !files.length) return;
+  await openRunFiles(files);
   // Let the picker fire again for the same folder.
   e.target.value = '';
 });
 
-ui.toggleLib.addEventListener('click', () => {
-  ui.library.hidden = !ui.library.hidden;
-  ui.toggleLib.textContent = ui.library.hidden ? 'Show list' : 'Hide list';
-  resize();
+// Runs on the machine serving the page, listed by serve.py. A plain static
+// server has no /api/runs, and then the control simply stays hidden.
+listRuns().then((runs) => {
+  if (!runs.length) return;
+  for (const r of runs) {
+    const opt = document.createElement('option');
+    opt.value = r.name;
+    opt.textContent = `${r.experiment_name || r.name} · ${r.replays} replays`;
+    opt.title = r.name;
+    ui.serverRuns.appendChild(opt);
+  }
+  ui.serverRuns.hidden = false;
+  // With runs on the server, the local pickers are the second choice; on a
+  // phone the folder picker does not work at all.
+  ui.empty.innerHTML =
+    'Pick a run from <b>Browse server runs…</b> above, or load a replay JSON — ' +
+    'file picker, drag a file here, or <b>Load sample</b>.';
+}).catch(() => {});
+
+ui.serverRuns.addEventListener('change', async () => {
+  const run = ui.serverRuns.value;
+  if (!run) return;
+  let files;
+  try {
+    files = await openRun(run);
+  } catch (e) {
+    showError(`could not list ${run} on the server: ${e.message}`);
+    return;
+  }
+  await openRunFiles(files);
 });
+
+ui.toggleLib.addEventListener('click', () => showLibrary(ui.library.hidden));
+ui.libClose.addEventListener('click', () => showLibrary(false));
+
+// The HUD covers a good part of a phone screen; its heading folds it away.
+ui.hud.querySelector('h2').addEventListener('click', () => {
+  ui.hud.classList.toggle('collapsed');
+});
+if (NARROW.matches) ui.hud.classList.add('collapsed');
 
 ui.file.addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
@@ -658,6 +733,7 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / Math.max(h, 1);
   camera.updateProjectionMatrix();
+  needsRender = true;
 }
 addEventListener('resize', resize);
 resize();

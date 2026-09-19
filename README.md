@@ -170,13 +170,15 @@ Resume an interrupted run, or extend a finished one, with `--resume runs/<dir>`;
 
 ```bash
 # Windows (PowerShell)
-python -m http.server 8000 --directory viewer
+python viewer/serve.py
 
 # Unix
-python3 -m http.server 8000 --directory viewer
+python3 viewer/serve.py
 ```
 
-Open <http://localhost:8000>. Click **Load sample** for the checked-in two-part replay, or drag-drop any file from `runs/<run>/replays/`. **Open run folder…** takes the run directory itself and lists everything recorded — sortable by fitness, speed, actuation, joints lost, part count, generation, and more.
+Open <http://localhost:8000>. **Browse server runs…** lists every run under `runs/` and opens it — sortable by fitness, speed, actuation, joints lost, part count, generation, and more. Or click **Load sample** for the checked-in two-part replay, drag-drop any file from `runs/<run>/replays/`, or use **Open run folder…** on the run directory itself.
+
+The same server works from a phone on the same Wi-Fi: it prints the address to type, something like `http://192.168.1.20:8000`, and the layout folds up to fit. Three things get in the way. Windows asks whether to let Python through the firewall the first time — allow it on private networks; if that prompt was ever cancelled, the rule it left blocks the phone until it is removed under *Allow an app through Windows Firewall*. A Wi-Fi connection Windows classes as *Public* refuses incoming connections regardless; switch it to *Private*. And the phone still needs the internet for Three.js, which comes from a CDN. The server is read-only and serves only `manifest.json` and `replays/` from each run, but it has no password, so use it on networks you trust, or run it with `--host 127.0.0.1` to keep it to this machine. The old `python -m http.server 8000 --directory viewer` still works for local files; only the run list needs `serve.py`.
 
 Three buttons answer the questions people usually arrive with, without hunting for a filename:
 
