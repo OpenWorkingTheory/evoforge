@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 EvoForge is a headless evolutionary artificial-life simulator in Rust. Organisms built from jointed primitive parts and driven by small feed-forward controllers are evaluated in a purpose-built rigid-body simulator; fitness drives selection, crossover, and mutation. The `evo` CLI is the only user-facing surface. No game engine, no ML framework, no GPU path, no rendering.
 
-Rust 1.82+. Binary is `target/release/evo` (`evo.exe` on Windows).
+Rust 1.98.1, pinned in `rust-toolchain.toml` so `rustup` fetches the right compiler on its own. Binary is `target/release/evo` (`evo.exe` on Windows).
 
 ## Commands
 
@@ -47,7 +47,8 @@ genome → phenotype → physics → sim → fitness → evolution
 - `genome` — heritable description, mutation, slot-aligned crossover
 - `brain` — fixed-topology feed-forward controller over a weight slice
 - `phenotype` — the only place genes become geometry
-- `physics/` — bodies, shapes, contacts, joints, motors, limits, terrain (`Flat`/`Rough`/`Fractal` behind one height function)
+- `physics/` — bodies, shapes, contacts, joints, motors, limits. The solver is `physics/world/`, one file per stage (`contacts`, `joints`, `integration`, `queries`, `util`)
+- `physics/terrain` — the ground (`Flat`/`Rough`/`Fractal` behind one height function). It touches no rigid body, which is why it is a module of its own
 - `sim` — one evaluation: inputs → controller → motors → step → `Metrics`
 - `fitness` — `Metrics` → scalar
 - `evolution` — population, selection, reproduction, lineage
@@ -82,9 +83,9 @@ Standing gates that must not be deleted or weakened: `a_dead_organism_does_not_t
 
 **A `Metrics` field:** add to the struct in `src/sim.rs` → record it in `sim::evaluate` (or trial aggregation) → expose as an optional `FitnessCfg` term in `src/fitness.rs` defaulting to zero → bump `ARTIFACT_FORMAT` in `src/record.rs` with a fallback default for older artifacts → add the off-is-exact gate test.
 
-**A config field:** add to `src/config.rs` with `#[serde(default)]`. Include it in `fingerprint()` only if it affects dynamics — that function is the resume guard, and recording/display-only fields do not belong there. There is deliberately no escape hatch for a changed fingerprint.
+**A config field:** add to the right section struct in `src/config/sections.rs` with `#[serde(default)]`. Include it in `config/fingerprint.rs` only if it affects dynamics — that function is the resume guard, and recording/display-only fields do not belong there. There is deliberately no escape hatch for a changed fingerprint.
 
-**An experiment:** copy the closest `experiments/*.toml`, change only the independent variable, name it after that variable (`brittle-walkers.toml`, not `joints-should-fail.toml`). Verify the corpse gate afterwards and record the result. If dynamics change it is a new experiment — do not resume an old run under new settings.
+**An experiment:** copy the closest `experiments/*.toml`, change only the independent variable, name it after that variable (`brittle-walkers.toml`, not `joints-should-fail.toml`). Verify the corpse gate afterwards and record the result — note that it can only measure an experiment whose `body.joint_endurance` is non-zero, since that is what makes `caution` able to switch the motors off; on any other config the probe says so rather than reporting a number. If dynamics change it is a new experiment — do not resume an old run under new settings.
 
 **A probe:** `examples/`, one question each, answer to stdout.
 
