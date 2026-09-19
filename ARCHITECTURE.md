@@ -272,10 +272,24 @@ money on compute:
 | `brain` | one hidden layer, fixed size | recurrent, or evolved topology |
 | `record` | JSON / JSON Lines | binary traces, object storage |
 | `evolution::next_generation` | generational, tournament + elitism | steady-state, islands, novelty search |
+| generation 0 | drawn from the seed (`Population::founding`), or imported from any run's checkpoint (`Population::from_founders`, `--founders`) | seeded from a designed body, or from a library of champions |
 
 None of these are behind traits or plugin registries. Enums and free functions
 are enough for one implementation each, and a trait added at the point a second
 implementation actually exists will be a better trait.
+
+The generation-0 seam is worth a word because it is deliberately *not* the
+resume path. Resume refuses any change to the evolution digest, and the
+environment, the fitness weights and the seed are all in that digest —
+correctly, since a resumed run has to mean what its checkpoint meant. Carrying
+a population into a different environment is therefore a new run whose
+founders happen to come from an old one: generation 0 restarts, provenance is
+written to `founders.jsonl`, and `from_founders` draws no randomness at all, so
+a run without founders is bit-identical to one from before the seam existed.
+What makes the import sound is that `Population` never reads the environment
+and `sim::evaluate` reaches it only through the configuration; what makes it
+safe is a guard that refuses a genome bred under a different controller layout
+or body limits rather than clamping it to fit.
 
 ## Cloud readiness (design only, nothing built)
 

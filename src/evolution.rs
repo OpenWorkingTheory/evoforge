@@ -85,6 +85,24 @@ impl Population {
         Population { generation: 0, next_id: cfg.evolution.population_size as u64 + 1, individuals }
     }
 
+    /// Create generation 0 from genomes bred somewhere else.
+    ///
+    /// The counterpart of [`Self::founding`] for a population imported from
+    /// another run: the same shape — ids `1..=n`, generation 0, no recorded
+    /// parents — but the genomes are given rather than drawn. It consumes no
+    /// randomness, which is what keeps a run *without* founders bit-identical to
+    /// one made before this constructor existed. Where each founder came from is
+    /// the caller's to record; see `record::FounderRecord`.
+    pub fn from_founders(genomes: Vec<Genome>) -> Population {
+        let individuals: Vec<Individual> = genomes
+            .into_iter()
+            .enumerate()
+            .map(|(i, genome)| Individual::unevaluated(i as u64 + 1, 0, [0, 0], genome))
+            .collect();
+        let next_id = individuals.len() as u64 + 1;
+        Population { generation: 0, individuals, next_id }
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.individuals.len()
@@ -405,6 +423,54 @@ mod tests {
             (0..n).map(|_| rank_of[tournament(&pop, &mut rng, size)] as f64).sum::<f64>() / n as f64
         };
         assert!(mean_rank(8) < mean_rank(2), "larger tournaments must select better");
+    }
+
+    #[test]
+    fn founders_are_numbered_from_one_with_no_recorded_parents() {
+        let cfg = quick_config();
+        let genomes: Vec<Genome> =
+            Population::founding(&cfg).individuals.into_iter().map(|i| i.genome).collect();
+        let pop = Population::from_founders(genomes.clone());
+
+        assert_eq!(pop.generation, 0);
+        assert_eq!(pop.len(), genomes.len());
+        assert_eq!(pop.next_id, genomes.len() as u64 + 1);
+        for (k, individual) in pop.individuals.iter().enumerate() {
+            assert_eq!(individual.id, k as u64 + 1);
+            assert_eq!(individual.parents, [0, 0]);
+            assert_eq!(individual.fitness, UNEVALUATED_FITNESS);
+            assert_eq!(individual.genome, genomes[k]);
+        }
+    }
+
+    /// Mixing two populations means founding a run from their union. The union
+    /// is larger than `population_size`; breeding must bring it back down, and
+    /// nothing in the loop may assume the two were ever equal.
+    #[test]
+    fn a_union_of_two_populations_breeds_down_to_the_configured_size() {
+        let cfg = quick_config();
+        let mut other = quick_config();
+        other.experiment.seed += 1;
+
+        let mut genomes: Vec<Genome> =
+            Population::founding(&cfg).individuals.into_iter().map(|i| i.genome).collect();
+        genomes.extend(Population::founding(&other).individuals.into_iter().map(|i| i.genome));
+        assert_eq!(genomes.len(), 2 * cfg.evolution.population_size);
+
+        let mut pop = Population::from_founders(genomes);
+        evaluate_population_serial(&mut pop, &cfg);
+        let next = next_generation(&pop, &cfg);
+
+        assert_eq!(next.len(), cfg.evolution.population_size);
+        assert_eq!(next.generation, 1);
+        let max_founder = pop.individuals.iter().map(|i| i.id).max().unwrap();
+        assert!(next.individuals.iter().all(|i| i.id > max_founder));
+        let known: std::collections::HashSet<u64> = pop.individuals.iter().map(|i| i.id).collect();
+        for child in &next.individuals {
+            for p in child.parents {
+                assert!(p == 0 || known.contains(&p), "child cites unknown parent {p}");
+            }
+        }
     }
 
     #[test]

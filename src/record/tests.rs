@@ -39,6 +39,62 @@ fn evaluated(cfg: &Config) -> Population {
 }
 
 #[test]
+fn founders_round_trip_and_a_seeded_run_has_none() {
+    let tmp = TempDir::new("founders");
+    let cfg = test_config(&tmp);
+    let run = Run::create(&cfg).unwrap();
+
+    assert!(run.read_founders().unwrap().is_empty(), "a fresh run claims no founders");
+    assert!(!run.dir.join(FOUNDERS_FILE).exists(), "absence of the file is the marker");
+
+    let records: Vec<FounderRecord> = (1..=3)
+        .map(|k| FounderRecord {
+            format: ARTIFACT_FORMAT,
+            id: k,
+            source_run: "elsewhere-1".into(),
+            source_id: 100 + k,
+            source_generation: 7,
+        })
+        .collect();
+    run.append_founders(&records).unwrap();
+    assert_eq!(run.read_founders().unwrap(), records);
+
+    // The new file changes nothing about how the run opens.
+    let reopened = Run::open(&run.dir).unwrap();
+    assert_eq!(reopened.manifest, run.manifest);
+}
+
+#[test]
+fn importable_genomes_prefer_the_checkpoint_and_fall_back_to_stored_ones() {
+    let tmp = TempDir::new("importable");
+    let cfg = test_config(&tmp);
+    let run = Run::create(&cfg).unwrap();
+    let pop = evaluated(&cfg);
+
+    assert!(run.importable_genomes().unwrap().is_empty(), "nothing stored, nothing to offer");
+
+    // Only some genomes stored, no checkpoint: those are what is on offer.
+    for individual in pop.individuals.iter().take(3) {
+        run.append_genome(individual).unwrap();
+    }
+    let offered = run.importable_genomes().unwrap();
+    assert_eq!(offered.len(), 3);
+    assert_eq!(offered[0].id, pop.individuals[0].id);
+    assert_eq!(offered[0].genome, pop.individuals[0].genome);
+
+    // Once a checkpoint exists it wins: the whole population, in order.
+    let next = evolution::next_generation(&pop, &cfg);
+    run.write_checkpoint(&next, &cfg).unwrap();
+    let offered = run.importable_genomes().unwrap();
+    assert_eq!(offered.len(), next.len());
+    for (stored, individual) in offered.iter().zip(&next.individuals) {
+        assert_eq!(stored.id, individual.id);
+        assert_eq!(stored.generation, individual.generation);
+        assert_eq!(stored.genome, individual.genome);
+    }
+}
+
+#[test]
 fn create_lays_out_the_run_directory() {
     let tmp = TempDir::new("layout");
     let cfg = test_config(&tmp);

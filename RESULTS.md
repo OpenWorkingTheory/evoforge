@@ -207,6 +207,48 @@ See [FITNESS_PLAN.md](FITNESS_PLAN.md) for the full calibration history.
 
 ---
 
+## Cross-Environment Transfer
+
+The three Terrain A/B arms, now `experiments/transfer/`, evolved from the same hundred founders for 100 generations, then scored in each other's worlds with `evo evaluate` and mixed with `--founders`. [TUTORIALS.md](TUTORIALS.md) is the procedure and the full account; this is what was measured. One seed, `20260906`, throughout.
+
+**Specialist and generalist, not two specialists.** Median fitness by population (rows) and ground (columns), every cell a fresh evaluation of the same organisms over the same trials:
+
+| evolved on | in flat | in fractal | in rough |
+|---|---|---|---|
+| naive founders | 1.07 | 0.80 | — |
+| flat | **11.80** | 3.32 | 1.49 |
+| fractal | 4.86 | **3.73** | 4.69 |
+
+The flat resident beats the fractal visitor **2.43×** on its own ground; the fractal resident beats the flat visitor only **1.12×**. Moved to fractal the flat population keeps 28% of its home median, and to rough 13%; moved to flat the fractal population scores 1.30× its home — because flat is easier, which is why raw scores are never compared across columns. The hard ground produced the robust population; the easy ground produced the fragile high scorer. Corpse gate on all six cells: 0–10% free.
+
+**Outbreeding depression, isolated.** One generation of pure crossover between uniformly paired parents (`transfer/mating.toml`, 200 children, 104 with a parent from each population), scored on rough:
+
+| children of | median | best |
+|---|---|---|
+| fractal × fractal | 3.30 | 7.67 |
+| flat × flat | 1.49 | 2.43 |
+| flat × fractal | **1.47** | 5.21 |
+| *parents* | *4.69 / 1.49* | |
+
+The within-population row is the control: one unselected step of crossover-and-mutation costs a fractal lineage ~30% (4.69 → 3.30). Crossing populations costs the rest, down to the flat level — although 83 of the 104 cross children inherited a fractal body, the fitter parent's. It is the controller that breaks.
+
+**Whether the genes persist depends on how the populations meet.** Fifty generations on rough, ancestry traced through `founders.jsonl` and recorded parents:
+
+| founded from | median gens 40–49 | best | ancestry at generation 49 |
+|---|---|---|---|
+| flat alone | 5.22 | 8.52 | flat |
+| fractal alone | 5.98 | 12.07 | fractal |
+| raw union | 8.73 | 12.87 | 98 fractal-only |
+| mating generation | **10.63** | **13.24** | 98 mixed |
+
+Thrown together, flat ancestry is extinct by generation 5 and the union arm is thereafter the fractal lineage on another random path — so its lead over fractal-alone measures run-to-run variance, not mixing. Passed through controlled crossover first, mixed lineages fall to 36% at generation 3, then overtake the pure-fractal lineage that had been gaining and are 98% of every generation from 10 on. The depression above was gone within five generations of selection.
+
+**Path dependence.** The flat population, carried flat → fractal → rough → flat for 100 generations each, kept its four-part body throughout. On fractal its median moved 3.32 → 3.53, finishing below the 3.84 that naive founders reached from 0.80: arriving adapted to the wrong thing was worse than arriving naive. Returning to flat it scored **11.99 at generation 0** — above the 11.62 it left with — and finished at 12.59 with the highest single score measured anywhere here, 13.86. It never lost what nothing had selected against.
+
+**Read with the caveats it earns.** One seed; the run-to-run spread the union arm exposed (8.73 against 5.98 for one lineage) is the scale of noise a single seed carries, and the hybrid arm's lead should be replicated before it is called a result. Every comparison cell comes from `evo evaluate`, because a checkpoint holds bred, unscored children: the returned population's checkpoint scores 11.21 on flat where its last scored generation read 12.59, which is one mutation step's cost and not a discrepancy.
+
+---
+
 ## Proving a Large Refactor Changed Nothing
 
 A refactor that splits 7,000 lines has no business changing behaviour, and saying so is not the same as knowing it. The golden tests cover four generations of sixteen organisms on flat ground — sixty-four evaluations, one frozen config — and would not notice a terrain band quietly dropped on the way out of a 3,000-line file.

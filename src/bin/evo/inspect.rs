@@ -22,6 +22,19 @@ pub(super) fn cmd_inspect(args: InspectArgs) -> Result<()> {
         cfg.evolution.population_size, cfg.evolution.generations
     );
     println!("objective     {:?}", cfg.fitness.objective);
+    // Without this line the seed above would suggest generation 0 can be
+    // reconstructed from it, which for a founded run is exactly wrong.
+    let founders = run.read_founders()?;
+    if !founders.is_empty() {
+        let mut sources: Vec<&str> = founders.iter().map(|f| f.source_run.as_str()).collect();
+        sources.sort_unstable();
+        sources.dedup();
+        println!(
+            "founded from  {} organism(s) imported from {} — generation 0 did not come from the seed",
+            founders.len(),
+            sources.join(", ")
+        );
+    }
     println!();
 
     let stats_path = args.run.join(record::STATS_FILE);

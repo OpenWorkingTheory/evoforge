@@ -67,6 +67,7 @@ Existing probes and what they ask:
 |---|---|
 | `dead_organism_probe` | With motors off, how far does this champion still travel? |
 | `reproduce_probe` | Does this build still reproduce what a recorded run recorded? |
+| `transfer_matrix` | How does each population score in each environment, and relative to its home? |
 | `conveyor_probe` | Which property of the ground gives distance away? |
 | `drift_probe` | Is a bigger body genuinely better, or is it collecting more free ride per part? |
 | `energy_probe` | Does a passive body ever end with more mechanical energy than it started with? |

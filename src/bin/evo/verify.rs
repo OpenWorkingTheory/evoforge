@@ -15,15 +15,25 @@ pub(super) fn cmd_verify(args: VerifyArgs) -> Result<()> {
     cfg.evolution.generations = args.generations;
     cfg.validate()?;
 
+    // Founded runs take the same path `evo run --founders` does, so the claim
+    // being proved covers imported populations as well as drawn ones.
+    let founding = if args.founders.is_empty() {
+        Population::founding(&cfg)
+    } else {
+        runner::import_founders(&cfg, &args.founders, true)?.0
+    };
+
     let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
     println!(
-        "verifying {} generations of {} organisms: 1 thread vs {cores}",
-        args.generations, cfg.evolution.population_size
+        "verifying {} generations of {} organisms{}: 1 thread vs {cores}",
+        args.generations,
+        founding.len(),
+        if args.founders.is_empty() { "" } else { " (imported founders)" }
     );
 
     let trace = |threads: usize| -> Result<Vec<(u64, [u64; 2], u32)>> {
         let pool = runner::build_pool(threads)?;
-        let mut pop = Population::founding(&cfg);
+        let mut pop = founding.clone();
         let mut out = Vec::new();
         for _ in 0..cfg.evolution.generations {
             evolution::evaluate_population(&mut pop, &cfg, &pool);

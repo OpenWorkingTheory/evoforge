@@ -1,0 +1,168 @@
+# One generation of controlled hybrids.
+#
+# `evo run transfer/rough.toml --founders A --founders B` mixes two populations,
+# but it mixes them through selection: in generation 1 the fitter founders win
+# most tournaments and many of the other population's genes are gone before
+# they ever recombine. That is a real lesson, but it is not a controlled cross.
+#
+# This file is the same family with [evolution] set so that the one generation
+# it breeds is nothing but crossover children of uniformly chosen parents:
+#
+#   population_size  200  every founder of a 100 + 100 union is a parent
+#   generations        1  score the union, breed once, checkpoint
+#   elite_count        0  nobody is carried forward unchanged
+#   tournament_size    1  a tournament of one is a uniform pick: no selection
+#   crossover_rate   1.0  every child has two parents
+#   immigrant_rate   0.0  no fresh random genomes sneaking in
+#
+#   evo run experiments/transfer/mating.toml --founders runs/transfer-flat-<ts> --founders runs/transfer-fractal-<ts>
+#   evo run experiments/transfer/rough.toml  --founders runs/transfer-mating-<ts>
+#
+# Its checkpoint is the hybrid population; found the next run from it.
+#
+# What a hybrid is here, given how `genome::crossover` works: the body of the
+# fitter parent with a controller blended from both. Topology and part count
+# come whole from the fitter parent, sizes and joints flip per slot, controller
+# weights flip per weight, and sensors are never recombined. So the environment
+# this file runs in still matters — it decides which parent counts as fitter and
+# donates the body. Rough is used because neither population evolved there;
+# change [environment] to any other arm's to see what that choice does.
+#
+# About half the children will have one parent from each source population;
+# the rest are same-source pairs. `founders.jsonl` plus each child's `parents`
+# tells them apart.
+
+[experiment]
+name = "transfer-mating"
+seed = 20260906
+output_dir = "runs"
+
+[evolution]
+population_size = 200
+generations = 1
+elite_count = 0
+tournament_size = 1
+crossover_rate = 1.0
+immigrant_rate = 0.0
+
+[mutation]
+sensor_rate = 0.03
+sensor_dir_sigma = 0.15
+weight_rate = 0.08
+weight_sigma = 0.25
+weight_reset_rate = 0.05
+size_rate = 0.05
+size_sigma = 0.03
+attach_rate = 0.05
+attach_sigma = 0.15
+joint_limit_rate = 0.05
+joint_limit_sigma = 0.2
+joint_kind_rate = 0.02
+joint_axis_rate = 0.03
+motor_rate = 0.05
+motor_sigma = 0.15
+caution_rate = 0.08
+caution_sigma = 0.12
+pair_rate = 0.05
+repeat_rate = 0.04
+shape_rate = 0.04
+add_part_rate = 0.06
+remove_part_rate = 0.05
+
+[body]
+sensor_probability = 0.0
+min_parts = 2
+max_parts = 8
+min_half_extent = 0.05
+max_half_extent = 0.2
+density = 1000.0
+min_joint_limit = 0.3
+max_joint_limit = 1.4
+max_motor_speed = 6.0
+max_motor_torque = 200.0
+hinge_probability = 0.85
+shapes = ["box", "taper", "sphere", "capsule", "cylinder"]
+taper_top_scale = 0.45
+joint_endurance = 150.0
+min_drive = 0.2
+muscle_stress = 12000.0
+tendon_frequency = 6.0
+tendon_damping = 0.5
+pair_probability = 0.45
+max_repeat = 3
+
+[brain]
+hidden = 12
+init_sigma = 0.8
+weight_limit = 8.0
+
+[simulation]
+# Timestep defaults to 1/120 s; do not write a rounded decimal here.
+duration = 8.0
+control_hz = 20.0
+solver_iterations = 12
+settle_time = 0.5
+baumgarte = 0.2
+slop = 0.002
+max_correction_speed = 2.0
+max_linear_speed = 60.0
+max_angular_speed = 40.0
+trials = 3
+start_jitter = 0.5
+aggregate = "mean"
+steer = true
+steer_spread = 0.9
+
+[environment]
+terrain = "rough"
+self_collision = true
+terrain_amplitude = 0.05
+terrain_wavelength = 1.6
+terrain_seed = 183821489130240734
+terrain_octaves = 4
+terrain_lacunarity = 2.0
+terrain_gain = 0.5
+terrain_warp = 0.3
+terrain_detail_amplitude = 0.0
+terrain_detail_wavelength = 3.0
+terrain_detail_octaves = 4
+terrain_modulation = 0.0
+terrain_modulation_wavelength = 35.0
+terrain_step = 0.0
+terrain_riser = 0.12
+terrain_terrace_mask = false
+terrain_per_trial = true
+gravity = 9.81
+friction = 0.9
+restitution = 0.0
+linear_damping = 0.02
+angular_damping = 0.05
+
+[fitness]
+objective = "heading"
+energy_penalty = 0.0
+upright_bonus = 0.2
+air_bonus = 0.0
+height_bonus = 0.0
+climb_bonus = 0.0
+descent_penalty = 0.0
+cumulative_climb_bonus = 0.0
+cumulative_descent_penalty = 0.0
+climb_deadband = 0.05
+fall_penalty = 0.0
+
+[sensor]
+range = 4.0
+rays = 3
+spread = 0.35
+
+[recording]
+top_n = 4
+random_samples = 3
+record_hz = 30.0
+every_generations = 10
+store_genomes = true
+
+[checkpoint]
+every_generations = 25
+on_finish = true

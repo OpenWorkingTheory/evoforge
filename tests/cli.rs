@@ -68,6 +68,25 @@ fn stdout_of(output: &Output) -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
+/// Like [`evo`], but for commands that are *supposed* to refuse.
+fn evo_output(args: &[&str]) -> Output {
+    Command::new(EVO).args(args).output().expect("failed to launch evo")
+}
+
+/// The single run directory created under `out`.
+fn only_dir_in(out: &Path) -> PathBuf {
+    fs::read_dir(out)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.is_dir())
+        .expect("no run directory was created")
+}
+
+fn nonblank_lines(path: &Path) -> usize {
+    fs::read_to_string(path).unwrap().lines().filter(|l| !l.trim().is_empty()).count()
+}
+
 /// Set up a run directory and return its path along with the config that made it.
 fn run_experiment(tmp: &TempDir) -> (PathBuf, PathBuf) {
     let config = tmp.0.join("experiment.toml");
@@ -230,4 +249,125 @@ fn verify_proves_determinism_for_a_real_config() {
     fs::write(&config, TINY_EXPERIMENT).unwrap();
     let out = stdout_of(&evo(&["verify", config.to_str().unwrap(), "--generations", "2"]));
     assert!(out.contains("identical"), "{out}");
+}
+
+/// `evo evaluate` writes a run directory a student can read like any other:
+/// one generation, every organism, every genome, where each founder came from,
+/// and nothing bred.
+#[test]
+fn evaluate_writes_a_self_describing_directory() {
+    let tmp = TempDir::new("evaluate");
+    let (config, source) = run_experiment(&tmp);
+    let out = tmp.0.join("evals");
+
+    let text = stdout_of(&evo(&[
+        "evaluate",
+        config.to_str().unwrap(),
+        "--founders",
+        source.to_str().unwrap(),
+        "--out",
+        out.to_str().unwrap(),
+        "--quiet",
+    ]));
+    assert!(text.contains("results in"), "{text}");
+    let dir = only_dir_in(&out);
+
+    assert_eq!(nonblank_lines(&dir.join("stats.csv")), 2, "header plus one generation");
+    assert_eq!(nonblank_lines(&dir.join("organisms.jsonl")), 6);
+    assert_eq!(nonblank_lines(&dir.join("genomes.jsonl")), 6, "every genome is stored");
+    assert_eq!(nonblank_lines(&dir.join("founders.jsonl")), 6, "every founder has provenance");
+    let checkpoints = fs::read_dir(dir.join("checkpoints")).unwrap().count();
+    assert_eq!(checkpoints, 0, "nothing was bred, so nothing to resume");
+}
+
+/// A population bred under one controller layout cannot be scored under
+/// another; the refusal names the field and leaves no directory behind.
+#[test]
+fn evaluate_refuses_founders_from_a_different_controller_layout() {
+    let tmp = TempDir::new("evaluate-refused");
+    let (_, source) = run_experiment(&tmp);
+
+    let wider = tmp.0.join("wider.toml");
+    fs::write(&wider, format!("{TINY_EXPERIMENT}\n[brain]\nhidden = 13\n")).unwrap();
+    let out = tmp.0.join("evals");
+
+    let output = evo_output(&[
+        "evaluate",
+        wider.to_str().unwrap(),
+        "--founders",
+        source.to_str().unwrap(),
+        "--out",
+        out.to_str().unwrap(),
+        "--quiet",
+    ]);
+    assert!(!output.status.success(), "should have refused");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("brain.hidden"), "names the field: {stderr}");
+    assert!(!out.exists() || fs::read_dir(&out).unwrap().count() == 0, "no half-made directory");
+}
+
+/// A founded run's manifest still carries a seed, and that seed did *not*
+/// produce generation 0. `inspect` has to say where it really came from, and
+/// `verify` has to be able to prove determinism along the same path.
+#[test]
+fn inspect_and_verify_understand_a_founded_run() {
+    let tmp = TempDir::new("founded-inspect");
+    let (config, source) = run_experiment(&tmp);
+    let config = config.to_str().unwrap();
+    let source_arg = source.to_str().unwrap();
+
+    let runs2 = tmp.0.join("runs2");
+    evo(&["run", config, "--founders", source_arg, "--out", runs2.to_str().unwrap(), "--quiet"]);
+    let founded = only_dir_in(&runs2);
+
+    let out = stdout_of(&evo(&["inspect", founded.to_str().unwrap()]));
+    assert!(out.contains("founded from  6 organism(s)"), "{out}");
+    let source_id = source.file_name().unwrap().to_string_lossy().into_owned();
+    assert!(out.contains(&source_id), "names the source run: {out}");
+
+    let out = stdout_of(&evo(&["verify", config, "--generations", "2", "--founders", source_arg]));
+    assert!(out.contains("imported founders"), "{out}");
+    assert!(out.contains("identical"), "{out}");
+}
+
+/// An evaluate directory has no checkpoint, but it stored every genome, so it
+/// founds a new run just as a finished run does.
+#[test]
+fn an_evaluate_directory_can_found_a_new_run() {
+    let tmp = TempDir::new("evaluate-chain");
+    let (config, source) = run_experiment(&tmp);
+    let config = config.to_str().unwrap();
+
+    let evals = tmp.0.join("evals");
+    evo(&[
+        "evaluate",
+        config,
+        "--founders",
+        source.to_str().unwrap(),
+        "--out",
+        evals.to_str().unwrap(),
+        "--quiet",
+    ]);
+    let scored = only_dir_in(&evals);
+
+    let runs2 = tmp.0.join("runs2");
+    evo(&[
+        "run",
+        config,
+        "--founders",
+        scored.to_str().unwrap(),
+        "--out",
+        runs2.to_str().unwrap(),
+        "--quiet",
+    ]);
+    let founded = only_dir_in(&runs2);
+
+    assert_eq!(nonblank_lines(&founded.join("founders.jsonl")), 6);
+    // Generation 0 is the imported six; generation 1 is bred back to the
+    // configured six; two generations of records in all.
+    assert_eq!(nonblank_lines(&founded.join("organisms.jsonl")), 12);
+    assert!(
+        fs::read_dir(founded.join("checkpoints")).unwrap().count() > 0,
+        "a real run checkpoints"
+    );
 }

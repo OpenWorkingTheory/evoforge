@@ -1,14 +1,15 @@
 //! `evo` — the EvoForge command line.
 //!
-//! Six verbs, no daemon, no state outside the run directory:
+//! Seven verbs, no daemon, no state outside the run directory:
 //!
 //! ```text
-//! evo run     experiments/first-walkers.toml   # evolve
-//! evo bench   experiments/first-walkers.toml   # measure throughput
-//! evo inspect runs/first-walkers-1700000000    # what happened
-//! evo replay  runs/... --organism 1837         # re-simulate one organism
-//! evo verify  experiments/first-walkers.toml   # prove determinism
-//! evo rescore runs/... --upright-bonus 0.5     # re-weight without re-simulating
+//! evo run      experiments/first-walkers.toml   # evolve
+//! evo evaluate transfer/fractal.toml --founders runs/flat-...  # score elsewhere, no evolution
+//! evo bench    experiments/first-walkers.toml   # measure throughput
+//! evo inspect  runs/first-walkers-1700000000    # what happened
+//! evo replay   runs/... --organism 1837         # re-simulate one organism
+//! evo verify   experiments/first-walkers.toml   # prove determinism
+//! evo rescore  runs/... --upright-bonus 0.5     # re-weight without re-simulating
 //! ```
 //!
 //! This file holds only the argument surface and the dispatch; each verb is
@@ -22,6 +23,7 @@ use clap::{Args, Parser, Subcommand};
 use evoforge::math::Real;
 
 mod bench;
+mod evaluate;
 mod inspect;
 mod replay;
 mod rescore;
@@ -43,6 +45,9 @@ struct Cli {
 enum Command {
     /// Run a headless evolutionary experiment.
     Run(RunArgs),
+    /// Score a population under a configuration without evolving it — how a
+    /// population evolved in one environment is measured in another.
+    Evaluate(EvaluateArgs),
     /// Measure evaluation throughput and its scaling across cores.
     Bench(BenchArgs),
     /// Summarise a completed or in-progress run.
@@ -90,6 +95,36 @@ struct RunArgs {
     /// Resume a checkpoint written by a different evoforge version.
     #[arg(long)]
     force_resume: bool,
+    /// Found generation 0 from this run's population (its latest checkpoint, or
+    /// a checkpoint file) instead of the seed. Repeat to found from the union of
+    /// several. The population must have been bred under the same [body] and
+    /// controller layout; the environment may differ, which is the point.
+    #[arg(long)]
+    founders: Vec<PathBuf>,
+}
+
+#[derive(Args)]
+struct EvaluateArgs {
+    /// Configuration to score under (TOML). Its [environment] is the point.
+    config: PathBuf,
+    /// Population(s) to score: run directories or checkpoint files. Repeat to
+    /// score their union. With none, the seed's own founding population is
+    /// scored — the naive baseline.
+    #[arg(long)]
+    founders: Vec<PathBuf>,
+    /// Worker threads; 0 uses one per core.
+    #[arg(long, default_value_t = 0)]
+    threads: usize,
+    /// Override the output directory.
+    #[arg(long)]
+    out: Option<PathBuf>,
+    /// Override the experiment seed. This moves the trial set every organism
+    /// meets, so results are only comparable with others scored under it.
+    #[arg(long)]
+    seed: Option<u64>,
+    /// Suppress the table.
+    #[arg(long)]
+    quiet: bool,
 }
 
 #[derive(Args)]
@@ -178,11 +213,16 @@ struct VerifyArgs {
     /// Generations to compare.
     #[arg(long, default_value_t = 3)]
     generations: u32,
+    /// Prove determinism for a run founded from these populations instead of
+    /// from the seed (same meaning as `evo run --founders`).
+    #[arg(long)]
+    founders: Vec<PathBuf>,
 }
 
 fn main() -> Result<()> {
     match Cli::parse().command {
         Command::Run(args) => run::cmd_run(args),
+        Command::Evaluate(args) => evaluate::cmd_evaluate(args),
         Command::Bench(args) => bench::cmd_bench(args),
         Command::Inspect(args) => inspect::cmd_inspect(args),
         Command::Replay(args) => replay::cmd_replay(args),

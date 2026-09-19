@@ -126,6 +126,7 @@ pub const ORGANISMS_FILE: &str = "organisms.jsonl";
 pub const GENOMES_FILE: &str = "genomes.jsonl";
 pub const CHECKPOINT_DIR: &str = "checkpoints";
 pub const REPLAY_DIR: &str = "replays";
+pub const FOUNDERS_FILE: &str = "founders.jsonl";
 
 /// Identifies a run and the exact inputs that produced it.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -174,6 +175,37 @@ pub struct StoredGenome {
     pub parents: [u64; 2],
     pub fitness: Real,
     pub genome: Genome,
+}
+
+impl From<&Individual> for StoredGenome {
+    fn from(i: &Individual) -> Self {
+        StoredGenome {
+            format: ARTIFACT_FORMAT,
+            id: i.id,
+            generation: i.generation,
+            parents: i.parents,
+            fitness: i.fitness,
+            genome: i.genome.clone(),
+        }
+    }
+}
+
+/// One line of `founders.jsonl`: where a founding organism came from.
+///
+/// Written only by a run founded from imported populations (`--founders`); the
+/// file's absence means generation 0 was drawn from the experiment seed as
+/// usual. `id` is the founder's id in *this* run, and the `source_*` fields
+/// locate the organism it was copied from, so a lineage can be followed back
+/// across run boundaries. A generation-1 organism whose two parents trace to
+/// different `source_run`s is a first-generation hybrid.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct FounderRecord {
+    #[serde(default = "legacy_format")]
+    pub format: u32,
+    pub id: u64,
+    pub source_run: String,
+    pub source_id: u64,
+    pub source_generation: u32,
 }
 
 /// A full-population snapshot, sufficient to resume a run.
@@ -269,16 +301,59 @@ impl Run {
     }
 
     pub fn append_genome(&self, individual: &Individual) -> std::io::Result<()> {
-        let stored = StoredGenome {
-            format: ARTIFACT_FORMAT,
-            id: individual.id,
-            generation: individual.generation,
-            parents: individual.parents,
-            fitness: individual.fitness,
-            genome: individual.genome.clone(),
-        };
+        let stored = StoredGenome::from(individual);
         let mut f = append_file(&self.dir.join(GENOMES_FILE))?;
         writeln!(f, "{}", serde_json::to_string(&stored)?)
+    }
+
+    /// Record where each founder of an imported generation 0 came from.
+    pub fn append_founders(&self, founders: &[FounderRecord]) -> std::io::Result<()> {
+        let mut f = BufWriter::new(append_file(&self.dir.join(FOUNDERS_FILE))?);
+        for record in founders {
+            writeln!(f, "{}", serde_json::to_string(record)?)?;
+        }
+        f.flush()
+    }
+
+    /// This run's founder provenance; empty for a run founded from its seed.
+    pub fn read_founders(&self) -> std::io::Result<Vec<FounderRecord>> {
+        let path = self.dir.join(FOUNDERS_FILE);
+        if !path.exists() {
+            return Ok(Vec::new());
+        }
+        let mut out = Vec::new();
+        for line in BufReader::new(File::open(&path)?).lines() {
+            if let Some(record) = parse_jsonl_line::<FounderRecord>(&line?)? {
+                check_readable(FOUNDERS_FILE, record.format)?;
+                out.push(record);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Every genome this run can hand to another run as founders.
+    ///
+    /// A checkpointed run offers its latest checkpoint: the whole population,
+    /// bred but not yet evaluated. A run with no checkpoints — an `evo evaluate`
+    /// output, or one killed before its first — offers every genome it stored
+    /// instead, so evaluate directories chain into new runs as readily as runs
+    /// do.
+    pub fn importable_genomes(&self) -> std::io::Result<Vec<StoredGenome>> {
+        if let Some(checkpoint) = self.latest_checkpoint()? {
+            return Ok(checkpoint.population.individuals.iter().map(StoredGenome::from).collect());
+        }
+        let path = self.dir.join(GENOMES_FILE);
+        if !path.exists() {
+            return Ok(Vec::new());
+        }
+        let mut out = Vec::new();
+        for line in BufReader::new(File::open(&path)?).lines() {
+            if let Some(stored) = parse_jsonl_line::<StoredGenome>(&line?)? {
+                check_readable(GENOMES_FILE, stored.format)?;
+                out.push(stored);
+            }
+        }
+        Ok(out)
     }
 
     /// Find a stored genome by organism id, looking in `genomes.jsonl` first and
@@ -306,14 +381,7 @@ impl Run {
             let checkpoint: Checkpoint = read_json(&path)?;
             check_readable(&path.display().to_string(), checkpoint.format)?;
             if let Some(individual) = checkpoint.population.find(id) {
-                return Ok(Some(StoredGenome {
-                    format: ARTIFACT_FORMAT,
-                    id: individual.id,
-                    generation: individual.generation,
-                    parents: individual.parents,
-                    fitness: individual.fitness,
-                    genome: individual.genome.clone(),
-                }));
+                return Ok(Some(StoredGenome::from(individual)));
             }
         }
         Ok(None)

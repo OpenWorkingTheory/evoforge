@@ -22,13 +22,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo run --release --bin evo -- verify experiments/first-walkers.toml --generations 3
 ```
 
-CLI subcommands: `run`, `bench`, `inspect`, `replay`, `verify`, `rescore`. `evo run <config.toml>` writes a self-describing directory under `runs/` (gitignored); `--resume runs/<dir>` continues it. `evo rescore` re-weights a finished run without re-simulating — use it to sanity-check a new fitness term before breeding under it.
+CLI subcommands: `run`, `evaluate`, `bench`, `inspect`, `replay`, `verify`, `rescore`. `evo run <config.toml>` writes a self-describing directory under `runs/` (gitignored); `--resume runs/<dir>` continues it. `evo rescore` re-weights a finished run without re-simulating — use it to sanity-check a new fitness term before breeding under it.
+
+A run directory is also a **population**. `evo run <cfg> --founders runs/<dir>` founds a new run's generation 0 from that run's latest checkpoint instead of the seed (repeat `--founders` for the union); `evo evaluate <cfg> --founders runs/<dir>` scores it under `<cfg>` without breeding. Both refuse an import bred under a different `[body]` or controller layout, and both write `founders.jsonl` saying where every founder came from. That is how a population evolved in one environment is measured in, or carried into, another — see `TRANSFER_PLAN.md` and `TUTORIALS.md`. It is not resume: generation 0 restarts, and the checkpoint it imports is the *bred* population, so every comparison cell comes from `evo evaluate`, never from a source run's `stats.csv`.
 
 Diagnostic probes are `examples/*.rs`, auto-discovered (no `[[example]]` entries in `Cargo.toml`):
 
 ```bash
 cargo run --release --example dead_organism_probe -- runs/<run>   # the corpse gate
 cargo run --release --example reproduce_probe -- runs             # every run as a fixture
+cargo run --release --example transfer_matrix -- runs             # population x environment table
 cargo run --release --example golden_probe                        # regenerate golden constants
 ```
 
@@ -95,6 +98,8 @@ Standing gates that must not be deleted or weakened: `a_dead_organism_does_not_t
 
 **An experiment:** copy the closest `experiments/*.toml`, change only the independent variable, name it after that variable (`brittle-walkers.toml`, not `joints-should-fail.toml`). Verify the corpse gate afterwards and record the result — note that it can only measure an experiment whose `body.joint_endurance` is non-zero, since that is what makes `caution` able to switch the motors off; on any other config the probe says so rather than reporting a number. If dynamics change it is a new experiment — do not resume an old run under new settings.
 
+**An environment family** (configs a population can move between): copy `experiments/transfer/flat.toml`, change *only* the terrain fields of `[environment]`, keep `experiment.seed` and pin `environment.terrain_seed` non-zero. Every other section must be identical across the family — `--founders` refuses a `[body]` or controller-layout mismatch and reports the rest, but holding `[simulation]` and `[fitness]` fixed is what makes a fitness difference attributable to the ground.
+
 **A probe:** `examples/`, one question each, answer to stdout.
 
 ## Style
@@ -103,6 +108,6 @@ Standing gates that must not be deleted or weakened: `a_dead_organism_does_not_t
 
 ## Documentation
 
-Each doc has one job; put content in the right place rather than duplicating it. `README.md` is a front door only (~250 lines) — no config essays, results tables, or lab notes. `RESULTS.md` = measured findings. `CONFIG.md` = TOML guide in prose. `ARCHITECTURE.md` = why the code is shaped this way, incl. replaceable seams. `ROADMAP.md` = phases and open questions. `CHANGELOG.md` = `ARTIFACT_FORMAT` bumps; do not invent history. `*_PLAN.md` = lab notes, status marked at top, historical ones left as archives.
+Each doc has one job; put content in the right place rather than duplicating it. `README.md` is a front door only (~250 lines) — no config essays, results tables, or lab notes. `RESULTS.md` = measured findings. `CONFIG.md` = TOML guide in prose. `ARCHITECTURE.md` = why the code is shaped this way, incl. replaceable seams. `ROADMAP.md` = phases and open questions. `CHANGELOG.md` = `ARTIFACT_FORMAT` bumps; do not invent history. `TUTORIALS.md` = guided experiments for students: exact commands, what to look at, what was observed when they were run. `*_PLAN.md` = lab notes, status marked at top, historical ones left as archives.
 
 When fixing a stale claim (future tense for shipped work, "planned"/"not yet built" for things that exist, phase numbers contradicting Phase 0's inventory), edit it in place — do not add a correction note beside the wrong text.

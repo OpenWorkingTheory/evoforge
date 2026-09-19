@@ -39,6 +39,7 @@ pub(super) fn cmd_run(args: RunArgs) -> Result<()> {
             quiet: args.quiet,
             resume: args.resume,
             force_resume: args.force_resume,
+            founders: args.founders,
         },
     )?;
 

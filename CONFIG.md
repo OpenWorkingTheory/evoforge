@@ -19,6 +19,10 @@ The load-bearing rule throughout: **off is exact.** A feature disabled by settin
 | `brittle-walkers.toml` | `shaped-walkers` with joint wear: motors can fail mid-trial |
 | `jumpers.toml` | `distance_x` objective with `air_bonus` and `height_bonus` — rewards leaving the ground |
 | `sensing-climbers.toml` | Fractal terrain with elevation scoring and a one-ray lidar sensor; best settings from the 300-generation comparison |
+| `transfer/flat.toml` | The Terrain A/B flat arm as one of a family identical outside `[environment]`, so a population evolved here can be scored in or carried to the other arms |
+| `transfer/rough.toml` | The rough arm of that family — the ground neither tutorial population evolved on |
+| `transfer/fractal.toml` | The fractal arm, `terrain_seed` pinned; byte-identical to the run behind RESULTS.md's table |
+| `transfer/mating.toml` | One generation of controlled crossover between two imported populations |
 
 Run any of them with:
 
@@ -307,3 +311,32 @@ Because full metrics are stored for every organism and `fitness::score` reads no
 It reports the best and median under both scorings and how much of the top ten survives the re-weighting — a scoring that reorders nobody is not asking a new question. With no weights overridden it is a round trip and must reproduce the recorded fitness exactly.
 
 Runs that finished before elevation was recorded can still be re-scored on the net terms: `start` and `end` were always stored, so the pair is recovered from them, approximately for multi-trial runs because the stored endpoints are already averaged.
+
+## Moving a Population Between Environments
+
+A run directory is a population: its latest checkpoint holds every genome. Two commands treat it as one.
+
+```bash
+# Score a population under a configuration without breeding it.
+./target/release/evo evaluate experiments/transfer/fractal.toml --founders runs/transfer-flat-<ts>
+
+# Found a new run's generation 0 from a population instead of from the seed.
+./target/release/evo run experiments/transfer/fractal.toml --founders runs/transfer-flat-<ts>
+
+# Repeat --founders to use the union of several populations.
+./target/release/evo run experiments/transfer/rough.toml \
+    --founders runs/transfer-flat-<ts> --founders runs/transfer-fractal-<ts>
+
+# Lay the results out as a population x environment table.
+cargo run --release --example transfer_matrix -- runs
+```
+
+Both accept a run directory (its latest checkpoint) or a checkpoint file, and both write `founders.jsonl` — one line per founder saying which run and which organism it came from — which `evo inspect` reports, because the manifest's seed did not produce that generation 0.
+
+**The family contract.** A genome is only interpretable under the body limits and controller layout it was bred under, so an import is refused, naming the field, when `body.max_parts`, `brain.hidden`, the zero/non-zero state of `body.joint_endurance`, `simulation.steer` or the sensor channel count differ, or when `[body]` differs at all. Nothing is clamped to fit. Differences in `[simulation]`, `[mutation]`, `[fitness]` or the seed are reported rather than refused, since they are legitimate things to vary — but the `experiments/transfer/` family holds every section but `[environment]` identical, and that is what makes a fitness difference attributable to the ground alone. To add an environment to the family, copy `transfer/flat.toml` and change only the terrain fields.
+
+**Two things this is not.** It is not resume: the new run starts at generation 0 under its own configuration and its own reproduction stream. And the population it imports is the *bred* one — a checkpoint is written after breeding, so its organisms are one mutation step past the last generation the source run scored and appear in none of its records. Every cell of a comparison, the home cell included, therefore comes from `evo evaluate`, never from a source run's `stats.csv`. `evo evaluate` with no `--founders` scores the seed's own founders: the naive baseline.
+
+**Mixing.** Founding a run from two populations makes their union generation 0; the first generation of ordinary tournament selection and crossover does the mixing, in whatever environment the run is in. That conflates selection with recombination — in a population's home ground its founders win most tournaments and much of the other population is purged before it recombines. `transfer/mating.toml` is the controlled alternative: `tournament_size = 1`, `crossover_rate = 1.0`, no elites, no immigrants, one generation of 200, so its checkpoint is nothing but crossover children of uniformly chosen parents. A hybrid here is the body of the fitter parent with a controller blended from both; the mating environment decides which parent that is.
+
+[TUTORIALS.md](TUTORIALS.md) walks through the experiments these support, with what was observed when they were run.

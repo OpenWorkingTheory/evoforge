@@ -127,6 +127,11 @@ The rest of the examples use the Unix form; on Windows substitute `.\target\rele
 # The same, on seeded fractal terrain that differs in every trial.
 ./target/release/evo run experiments/fractal-animals.toml
 
+# Score a population somewhere it did not evolve, without evolving it further —
+# then carry it there. A run directory is a population. See TUTORIALS.md.
+./target/release/evo evaluate experiments/transfer/fractal.toml --founders runs/transfer-flat-<timestamp>
+./target/release/evo run experiments/transfer/fractal.toml --founders runs/transfer-flat-<timestamp>
+
 # Measure throughput and its scaling across cores.
 ./target/release/evo bench experiments/first-walkers.toml
 
@@ -193,6 +198,7 @@ A lidar-like range sensor (a fan of rays cast from a mounted part, returning dis
 
 | File | What it covers |
 |---|---|
+| [TUTORIALS.md](TUTORIALS.md) | Guided experiments: two worlds, swapping them, breeding populations, adapting the hybrids, a sequence of environments |
 | [RESULTS.md](RESULTS.md) | Measured findings: terrain A/B, corpse gate, sensor arms, Baumgarte leak, climb calibration |
 | [CONFIG.md](CONFIG.md) | Full experiment configuration guide with worked TOML examples |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Design rationale: purity, determinism, module map, replaceable seams |
@@ -222,6 +228,7 @@ What is implemented today:
 * Elevation metrics: `climb_bonus`, `descent_penalty`, `cumulative_climb_bonus`, `cumulative_descent_penalty`, `fall_penalty`
 * A lidar-like range sensor carried by a body part; `experiments/sensing-climbers.toml`
 * `evo rescore`: re-weight a finished run without re-simulating
+* `evo evaluate` and `--founders`: score a population in an environment it did not evolve in, or carry it there, with every founder's provenance recorded
 * Tournament selection with elitism, slot-aligned crossover and mutation, random immigration
 * Bitwise determinism including hand-written transcendentals, independent of platform libm
 * Multi-core evaluation whose results are independent of thread count
