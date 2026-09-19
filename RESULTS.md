@@ -152,7 +152,7 @@ Correction is applied at the contact point, which is offset from the body's cent
 
 Measured on evolved champions at `baumgarte = 0.2`: they covered 2.72 m, and refining the solver from 12 iterations to 96 removed **94%** of it. At 0.05 they cover 0.36 m and refinement removes almost nothing. Raising `solver_iterations` fixes it too — 48 iterations costs 1.7x and 96 costs 2.8x — where lowering `baumgarte` costs 1.08x.
 
-The general test is `travel_survives_refining_the_solver`: distance that exists only at a coarse solve is the integrator propelling the organism. Runs made before this default changed record `baumgarte = 0.2` in their own `config.toml`, so they still resume and still reproduce — but their distances should be read as upper bounds. `examples/leak_probe.rs` will say how much of any given champion was real.
+The general test is `travel_survives_refining_the_solver`: distance that exists only at a coarse solve is the integrator propelling the organism. Runs made before this default changed record `baumgarte = 0.2` in their own `config.toml`, so the setting travels with them and they still resume — but their distances should be read as upper bounds, and they no longer *re-evaluate* to the numbers they recorded. The split-impulse fix that landed in 0.3.0 is solver code rather than configuration, so nothing in an old run directory can carry it; `reproduce_probe` scores every pre-0.3.0 run in the archive as differing, and differing downwards. `examples/leak_probe.rs` will say how much of any given champion was real.
 
 ---
 
@@ -173,3 +173,41 @@ Measured over 150 generations at `descent_penalty = 8`: a population converged o
 `fall_penalty` is the targeted replacement. It charges only for height given away *while no attached part is touching the ground* — the part of a descent the organism did not choose. Walking down a slope keeps contact and costs nothing; stepping off a terrace does not. That makes "do not fall" expressible without also making "do not go downhill" expressible. `falling_is_charged_where_walking_downhill_is_not` and `fall_penalty_does_not_reward_standing_still` are the gates.
 
 See [FITNESS_PLAN.md](FITNESS_PLAN.md) for the full calibration history.
+
+---
+
+## Proving a Large Refactor Changed Nothing
+
+A refactor that splits 7,000 lines has no business changing behaviour, and saying so is not the same as knowing it. The golden tests cover four generations of sixteen organisms on flat ground — sixty-four evaluations, one frozen config — and would not notice a terrain band quietly dropped on the way out of a 3,000-line file.
+
+The check that does notice: build the commit *before* the refactor, force both builds onto the same compiler so the toolchain is not a second variable, run identical configs through both binaries, and diff the artefacts. Evaluation is a pure function of `(genome, config)` and every stream is derived, so bit-exactness is not a hope — anything else is a regression.
+
+Three arms, chosen for coverage rather than depth. `sensing-climbers.toml` earns its place by driving the fractal field with all four bands *including terracing* and casting sensor rays at it, which is most of `physics/terrain.rs` in one config:
+
+| arm | generations | `organisms.jsonl` | checkpoint population | replay traces |
+|---|---|---|---|---|
+| flat | 30 | 3000 records, 1,777,641 B — identical | ~900 KB identical | — |
+| rough | 30 | 3000 records — identical | ~940 KB identical | — |
+| sensing-climbers | 6 | 600 records — identical | ~1,088 KB identical | 7 / 7 identical |
+
+`stats.csv` matched on every deterministic column, and the resume digest matched on every arm. Across roughly 6,600 organisms the only field that differed anywhere was `experiment_id`, which embeds the run timestamp.
+
+**The corpse gate reproduced the Terrain A/B table exactly** — 6.28 m alive against −0.14 m dead on flat (−2%), 2.96 m against 0.20 m on rough (7%). Those numbers were recorded on Rust 1.82 and `toml` 0.8; they came back to the last digit on a split solver, a split config module, Rust 1.98.1, and a `toml` major-version migration that relocked six packages.
+
+**One trap worth knowing before you run this.** The `config_digest` in `manifest.json` will differ between two such runs, and it is not a regression: `experiment.output_dir` is part of the *bookkeeping* fingerprint, so giving each build its own `--out` changes it by construction. The digest that gates resume is the one stored in the checkpoint, which excludes bookkeeping. Compare that one.
+
+**What this does not establish.** The fractal corpse gate is untested here. Six generations leaves heading progress at 0.04 m, and a share computed against that denominator is arithmetic rather than evidence — the same small-denominator caveat the Terrain A/B section records for its own 22% figure. Reaching the documented 1.54 m needs a full 30-generation fractal arm, roughly twelve minutes on its own.
+
+The general lesson outlived the refactor: this project already carries a stronger regression test than its test suite. Any recorded run is a fixture, because its `config.toml` is fully resolved and evaluation is pure, so the numbers it recorded *are* a baseline — no second build required to hold them up against.
+
+Run over the whole archive — 34 runs, 3,737 stored genomes — it takes 79 seconds and splits cleanly on the version that recorded each run:
+
+| recorded by | runs exact | organisms | runs differing | organisms |
+|---|---|---|---|---|
+| evoforge 0.3.0 | 13 | 1,398 | 0 | 0 |
+| evoforge 0.2.0 | 0 | 0 | 18 | 2,264 |
+| evoforge 0.1.0 | 0 | 0 | 1 | 40 |
+
+The split is on the version, not the artefact format, and the archive contains its own control: two `ab-rough` runs, both format 6, both rough ground, recorded an hour apart either side of the 0.3.0 solver fix. The 0.2.0 one differs; the 0.3.0 one reproduces all 56. Pre-0.3.0 scores come back *lower* than recorded, which is the split-impulse fix taking away travel the old solver was giving out — the same effect the Terrain A/B section describes. Those runs are not regressions; they are a record of a bug that was fixed, and their fitness figures should not be compared against anything current.
+
+`examples/reproduce_probe.rs` is that idea made runnable. It re-evaluates every stored genome in a run and compares against the fitness and metrics the run recorded, checking only the fields that record actually claims, so a run written under an older `ARTIFACT_FORMAT` is not blamed for metrics added since. Pointed at the whole archive it covers the evaluation path across every terrain, body plan and objective ever run, and exits non-zero on a mismatch.

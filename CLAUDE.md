@@ -28,8 +28,16 @@ Diagnostic probes are `examples/*.rs`, auto-discovered (no `[[example]]` entries
 
 ```bash
 cargo run --release --example dead_organism_probe -- runs/<run>   # the corpse gate
+cargo run --release --example reproduce_probe -- runs             # every run as a fixture
 cargo run --release --example golden_probe                        # regenerate golden constants
 ```
+
+`reproduce_probe` is the widest regression check available here. A run directory
+is already a fixture: its `config.toml` is fully resolved and evaluation is pure,
+so re-evaluating its stored genomes must reproduce the fitness and metrics it
+recorded, bit for bit — no second build needed, because the recorded numbers are
+the baseline. Run it over `runs/` after anything that touches the evaluation
+path. It exits non-zero on a mismatch.
 
 The viewer (`viewer/`) is plain HTML + JS with Three.js from a CDN — no build step. Serve it with `python -m http.server 8000 --directory viewer`.
 

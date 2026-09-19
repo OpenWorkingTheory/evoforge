@@ -49,17 +49,24 @@ Document what you expected, what you observed, and whether the corpse gate passe
 cargo run --release --example dead_organism_probe -- runs/<your-run>
 ```
 
-See [RESULTS.md](RESULTS.md) for what "the corpse gate passes" means and why it matters.
+See [RESULTS.md](RESULTS.md) for what "the corpse gate passes" means and why it matters. The gate can only measure an experiment whose `body.joint_endurance` is non-zero; on any other config the probe says so rather than printing a number.
+
+Keep your run. A finished run directory is a regression fixture — its `config.toml` is fully resolved and evaluation is pure — so anyone can later check a new build against it:
+
+```bash
+cargo run --release --example reproduce_probe -- runs
+```
 
 ## Adding a diagnostic probe
 
-Probes live in `examples/`. Each answers one question: "is what I measured real?" They run against a finished run or a fixed random seed and write their answer to stdout. Add them to `Cargo.toml` as `[[example]]` entries.
+Probes live in `examples/`. Each answers one question: "is what I measured real?" They run against a finished run or a fixed random seed and write their answer to stdout. Nothing needs registering: `examples/` is auto-discovered, and `Cargo.toml` deliberately carries no `[[example]]` entries.
 
 Existing probes and what they ask:
 
 | Probe | Question |
 |---|---|
 | `dead_organism_probe` | With motors off, how far does this champion still travel? |
+| `reproduce_probe` | Does this build still reproduce what a recorded run recorded? |
 | `conveyor_probe` | Which property of the ground gives distance away? |
 | `drift_probe` | Is a bigger body genuinely better, or is it collecting more free ride per part? |
 | `energy_probe` | Does a passive body ever end with more mechanical energy than it started with? |
