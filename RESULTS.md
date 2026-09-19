@@ -219,7 +219,18 @@ The three Terrain A/B arms, now `experiments/transfer/`, evolved from the same h
 | flat | **11.80** | 3.32 | 1.49 |
 | fractal | 4.86 | **3.73** | 4.69 |
 
-The flat resident beats the fractal visitor **2.43×** on its own ground; the fractal resident beats the flat visitor only **1.12×**. Moved to fractal the flat population keeps 28% of its home median, and to rough 13%; moved to flat the fractal population scores 1.30× its home — because flat is easier, which is why raw scores are never compared across columns. The hard ground produced the robust population; the easy ground produced the fragile high scorer. Corpse gate on all six cells: 0–10% free.
+At this one checkpoint the flat resident beats the fractal visitor 2.43× on its own ground and the fractal resident beats the flat visitor only 1.12× — which read as a specialist and a generalist. **Most of that asymmetry was noise.** A cell scores one checkpoint, one generation's children, and the flat population's median swings by two to three points between consecutive checkpoints. Continuing both arms to 200 generations on copies and scoring every 25th checkpoint:
+
+| median, scored in | gen 100 | 126 | 151 | 176 | 200 | mean |
+|---|---|---|---|---|---|---|
+| flat-evolved, in flat | 11.80 | 11.57 | 9.42 | 11.41 | 9.30 | 10.70 |
+| flat-evolved, in fractal | 3.32 | 2.61 | 2.35 | 2.64 | 2.24 | 2.63 |
+| fractal-evolved, in flat | 4.86 | 6.77 | 6.24 | 5.57 | 6.27 | 5.94 |
+| fractal-evolved, in fractal | 3.73 | 4.45 | 4.27 | 4.24 | 3.97 | 4.13 |
+
+On the means the home advantage is **1.80× on flat and 1.57× on fractal** — nearly symmetric; the single-checkpoint figures were the same noise pulling opposite ways. What holds across all five checkpoints is the fragility of the flat population — it keeps 25% of its home median on fractal and 13–16% on rough, and the fractal figure *falls* as it keeps adapting at home — and the breadth of the fractal population, whose score rises in every world at once (its flat score, 1.44× its home median, is flat being easier, not adaptation to flat). Corpse gate on every cell at both depths: 0–13% free.
+
+**The method finding matters as much as the result.** A population whose median jumps generation to generation cannot be characterised by one `evo evaluate` of one checkpoint; the run's own best fitness climbed smoothly (12.46 → 12.71) while its median cells ranged 9.30–11.80. Periodic checkpoints make the remedy free: score several and report the spread. The 100-generation tutorial figures are kept above because they are what a student will see first, and learning why they mislead is the lesson.
 
 **Outbreeding depression, isolated.** One generation of pure crossover between uniformly paired parents (`transfer/mating.toml`, 200 children, 104 with a parent from each population), scored on rough:
 

@@ -33,14 +33,18 @@ the selection they were under. Each organism is scored over the same three
 trials as every other organism in its arm. And `terrain_seed` is pinned, so the
 fractal landscape is the same one every time.
 
-**Two rules for reading fitness.** Never compare raw scores *across* columns:
-a flat-ground metre and a fractal metre are not the same currency, and a
-population scoring 12 on flat and 4 on fractal may not have lost anything.
+**Three rules for reading fitness.** Never compare raw scores *across*
+columns: a flat-ground metre and a fractal metre are not the same currency, and
+a population scoring 12 on flat and 4 on fractal may not have lost anything.
 Compare *down* a column (two populations on the same ground, same trials) or
-*along* a row against the population's home. And every cell comes from
+*along* a row against the population's home. Every cell comes from
 `evo evaluate`, never from a run's own `stats.csv`: a run's final checkpoint is
 one mutation step past its last scored generation, so scoring it fresh is the
-only way to compare like with like.
+only way to compare like with like. And one checkpoint is one sample: a
+population whose median jumps from generation to generation will hand you
+whichever jump the checkpoint caught, so before quoting a number, score several
+checkpoints and look at the spread. Tutorial 2 shows what happens when you
+don't.
 
 **Time.** On a twelve-core laptop the flat arm takes about 1½ minutes, the
 rough arm about 3½, the fractal arm about 13½. The whole sequence below is a
@@ -124,13 +128,24 @@ cargo run --release --example transfer_matrix -- runs
 | evolved on flat | **12.46 / 11.80** | 4.30 / 3.32 |
 | evolved on fractal | 8.97 / 4.86 | **6.71 / 3.73** |
 
-Read down each column. **On flat ground the resident wins by 2.4×** at the
-median (11.80 against 4.86). **On fractal ground the resident wins by only
-1.12×** (3.73 against 3.32). The flat population is a specialist: moved to
-broken ground it keeps 28% of its home score. The fractal population is a
-generalist: moved to flat it scores *more* than at home, 1.30× — not because it
-adapted to flat, but because flat is easier, which is exactly why raw scores
-must not be compared across columns.
+Read down each column. On flat ground the resident wins by 2.4× at the median
+(11.80 against 4.86); on fractal ground by only 1.12× (3.73 against 3.32). The
+flat population is a specialist: moved to broken ground it keeps 28% of its
+home score. The fractal population looks like a generalist: moved to flat it
+scores *more* than at home, 1.30× — not because it adapted to flat, but because
+flat is easier, which is exactly why raw scores must not be compared across
+columns.
+
+**Now read the small print, because half of that turned out to be noise.**
+Each cell above scores *one* checkpoint — one generation's children — and the
+flat population's median swings by two or three points from one generation to
+the next. Continuing both runs to 200 generations and scoring every 25th
+checkpoint (see *Going deeper*, below) puts the home advantage at **1.80× on
+flat and 1.57× on fractal**: nearly symmetric. The 2.4× and 1.12× were the same
+noise pulling in opposite directions. What survives, and sharpens, is the
+fragility: the flat population keeps 25% of its score on fractal across all
+five checkpoints, and that figure *falls* as it keeps adapting at home, while
+the fractal population's score improves in every world at once.
 
 Two more things the table says. Both visitors beat the naive founders by four
 to four-and-a-half times in the foreign world — locomotion as such transfers,
@@ -140,14 +155,54 @@ on fractal (4.30). The corpse gate confirms all four cells are real gaits, not
 tumbling: motors off, the champions cover 0–10% of their distance.
 
 **The concept.** Fitness is not a property of an organism; it is a property of
-an organism *in an environment*. And adaptation is asymmetric here: adapting to
-the hard world bought robustness, adapting to the easy world bought a high
-peak and fragility.
+an organism *in an environment*. Both populations are better at home than
+their visitors are; the asymmetry is in what happens abroad. Adapting to the
+easy world bought a high peak and a fragility that deepens with further
+adaptation; adapting to the hard world bought locomotion that keeps improving
+everywhere.
 
-**What surprised us.** We expected two specialists. We got one specialist and
-one generalist, and the *hard* environment produced the generalist. Whether
-that holds for other seeds and other grounds is an open question this
-experiment is built to ask.
+**What surprised us.** Twice. First the 100-generation table, which said the
+hard world produced a generalist with almost no home advantage. Then the
+checkpoint sweep, which said most of that was one noisy cell. The durable
+finding is the fragility of the specialist, not the modesty of the generalist —
+and the method finding is that a population whose median jumps around has to
+be scored across several checkpoints before one number is quoted.
+
+### Going deeper: the same experiment at 200 generations
+
+Whether a result depends on where you stopped is the first thing to check, and
+resume makes it cheap. Continue each arm on a *copy*, so the run directories the
+other tutorials use keep their generation-100 checkpoints, then score every
+checkpoint the copy wrote:
+
+```bash
+cp -r runs/transfer-flat-<ts> runs/transfer-flat-200
+./target/release/evo run experiments/transfer/flat.toml --resume runs/transfer-flat-200 --generations 200
+for g in 100 126 151 176 200; do   # the schedule writes children, so 126 not 125
+  ./target/release/evo evaluate experiments/transfer/flat.toml    --founders runs/transfer-flat-200/checkpoints/gen_000$g.json
+  ./target/release/evo evaluate experiments/transfer/fractal.toml --founders runs/transfer-flat-200/checkpoints/gen_000$g.json
+done
+```
+
+and the same for the fractal arm. Fifteen minutes of compute, the fractal
+continuation being most of it. Median fitness by checkpoint:
+
+| population, scored in | gen 100 | 126 | 151 | 176 | 200 | mean |
+|---|---|---|---|---|---|---|
+| flat-evolved, in flat | 11.80 | 11.57 | 9.42 | 11.41 | 9.30 | **10.70** |
+| flat-evolved, in fractal | 3.32 | 2.61 | 2.35 | 2.64 | 2.24 | **2.63** |
+| fractal-evolved, in flat | 4.86 | 6.77 | 6.24 | 5.57 | 6.27 | **5.94** |
+| fractal-evolved, in fractal | 3.73 | 4.45 | 4.27 | 4.24 | 3.97 | **4.13** |
+
+The flat population at home spans 9.30 to 11.80 across five checkpoints of a
+run whose best was climbing smoothly (12.46 → 12.71) — the median is jumpy, the
+champion is not. On the means: home advantage 1.80× on flat, 1.57× on fractal.
+The flat population's fractal score drifts *down* with more home adaptation;
+the fractal population's flat score jumps after generation 100 and holds near
+6. Over the second hundred generations the flat arm's best rose +0.26 and was
+done by 175; the fractal arm's rose +0.72 and was still moving at 200, which
+matches the ~210-generation plateau RESULTS.md found for that ground. The
+corpse gate on every 200-generation cell reads 0–13%.
 
 ---
 

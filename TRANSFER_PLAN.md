@@ -132,6 +132,13 @@ A first-generation hybrid is any organism whose two `parents` trace, through
   keeps 200; `unique_structures` from generation 0 to 1 is the gauge.
 * **Immigrants** reintroduce `[0,0]` lineages that look like founders; mixing
   runs set `immigrant_rate = 0`.
+* **One checkpoint is one sample.** A cell of the transfer matrix scores one
+  generation's children, and a population whose median swings between
+  generations (the flat arm: 9.3 to 11.8 across five checkpoints) will hand you
+  whichever swing the checkpoint caught. The 100-generation home-advantage
+  figures (2.43× / 1.12×) collapsed to 1.80× / 1.57× when five checkpoints were
+  averaged. Score several checkpoints — the schedule writes them for free — and
+  quote the spread.
 
 ## 5. Stages
 
