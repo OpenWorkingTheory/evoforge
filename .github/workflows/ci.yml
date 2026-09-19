@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.98.1
       - uses: Swatinem/rust-cache@v2
       - name: Test
@@ -34,7 +34,7 @@ jobs:
     name: verify determinism
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.98.1
       - uses: Swatinem/rust-cache@v2
       - run: cargo run --release --bin evo -- verify experiments/first-walkers.toml --generations 3
@@ -43,7 +43,7 @@ jobs:
     name: fmt and clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: rustfmt, clippy
@@ -52,3 +52,31 @@ jobs:
         run: cargo fmt --all --check
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # The viewer mirrors the simulator's height field in JavaScript rather than
+  # being shipped a sampled patch, and pays for that by being checkable: the
+  # terrain check compares its heights against ones the Rust side emitted. The
+  # other two checks are pure logic (which organism a guided sequence shows, and
+  # what serve.py answers) that would otherwise only fail in a browser. None of
+  # this needs a browser, so it runs here.
+  viewer:
+    name: viewer checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Terrain mirror
+        run: |
+          cargo run --release --example terrain_samples > "$RUNNER_TEMP/samples.json"
+          node viewer/terrain_check.mjs "$RUNNER_TEMP/samples.json"
+      - name: Library sequences
+        run: node viewer/library_check.mjs
+      - name: Server
+        run: python viewer/serve_check.py

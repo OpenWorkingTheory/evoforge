@@ -4,7 +4,7 @@ EvoForge is an open artificial-life laboratory. The best contributions are new e
 
 ## Building and testing
 
-Rust **1.82** or later is required (`rustup show` to check).
+There is no compiler version to choose: `rust-toolchain.toml` pins the exact one, and `rustup` fetches it the first time you build (`rustup show` confirms which is active).
 
 ```bash
 # Build the release binary
@@ -24,6 +24,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 All four of these are run in CI on every push. A contribution should pass all four before review.
+
+The browser viewer in `viewer/` has no build step and no package manager, but it does have three offline checks, and CI runs them too. They need Node (the line in `.node-version`, currently 24; anything from 18 up works, the scripts use nothing newer than `node:` imports) and Python 3.13 (any 3.7 or later works; `serve.py` is standard library only):
+
+```bash
+cargo run --release --example terrain_samples > samples.json
+node viewer/terrain_check.mjs samples.json   # viewer/terrain.js agrees with the simulator
+node viewer/library_check.mjs                # the guided sequences in viewer/library.js
+python viewer/serve_check.py                 # serve.py, without a browser
+```
 
 ## The golden tests and "off is exact"
 
