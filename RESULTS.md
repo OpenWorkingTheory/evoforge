@@ -122,7 +122,70 @@ What survives is the *ordering* — fractal bodies are larger than flat or rough
 | rough | 30.6 organisms/s @ 4.52 parts | 38.9 @ 3.14 parts |
 | fractal | 14.7 organisms/s @ 4.52 parts | 7.4 @ 7.82 parts |
 
-**Still one seed, with no repetition.** The longer run this section used to ask for has been done twice over, to 100 and then 300 generations, and it settled the part-count question by overturning half of it. The ordering and the corpse gate survived both depths; the "flat collapses" reading did not. What remains untested is whether any of it holds on a different seed — every figure here comes from `seed = 20260906`. Treat the ordering as established, the magnitudes as one sample, and re-read any finding that rests on a single stopping point.
+**One seed, until it was replicated.** The longer run this section used to ask for has been done twice over, to 100 and then 300 generations, and it settled the part-count question by overturning half of it. The ordering and the corpse gate survived both depths; the "flat collapses" reading did not. Every figure above comes from `seed = 20260906`. The replication on two further seeds is the next section, and it overturns more: the flat-beats-rough ordering, the flat sweep, and the downhill bias are all seed-specific. Treat the corpse gate and the transfer shape as established, the magnitudes as one sample, and re-read any finding that rests on a single stopping point or a single seed.
+
+---
+
+## Replication on New Seeds: What Survives a Different Founding Population
+
+The three arms above, now `experiments/transfer/`, rerun at 300 generations with `--seed 20260919`, plus the flat arm a third time with `--seed 20260920`. `terrain_seed` is pinned in that family, so the ground is byte-identical to the runs above; only the founders and the trial set moved. Every founder set is distinct (no generation-0 fitness value is shared between seeds), and every arm cleared the corpse gate. Run directories: `transfer-flat-1789860021`, `transfer-rough-1789860837`, `transfer-fractal-1789861508`, `transfer-flat-1789864167`.
+
+```bash
+./target/release/evo run experiments/transfer/flat.toml    --seed 20260919 --generations 300
+./target/release/evo run experiments/transfer/rough.toml   --seed 20260919 --generations 300
+./target/release/evo run experiments/transfer/fractal.toml --seed 20260919 --generations 300
+./target/release/evo run experiments/transfer/flat.toml    --seed 20260920 --generations 300
+```
+
+Each cell is **generation 29 / 99 / 299**, with the seed-20260906 figure from the table above in italics beneath:
+
+| arm | best | median | mean parts | distinct structures | corpse gate at 299 |
+|---|---|---|---|---|---|
+| flat, seed 20260919 | 4.01 / 5.29 / 6.48 | 1.98 / 2.24 / 1.95 | 7.49 / 6.09 / 5.98 | 97 / 79 / 81 | 4.87 m alive, 0.00 m dead, 0% |
+| *flat, 20260906* | *9.18 / 12.45 / 12.75* | *8.94 / 11.62 / 10.80* | *2.12 / 4.09 / 4.12* | *21 / 40 / 54* | *0%* |
+| flat, seed 20260920 | 5.83 / 9.26 / 9.83 | 2.08 / 7.77 / 5.87 | 3.99 / 4.06 / 3.94 | 66 / 38 / 42 | 8.24 / 0.05 / 1% |
+| rough, seed 20260919 | 3.95 / 7.66 / 10.40 | 2.55 / 3.37 / 5.66 | 4.11 / 5.27 / 5.97 | 64 / 78 / 79 | 8.80 / 0.44 / 5% |
+| *rough, 20260906* | *7.53 / 8.92 / 9.20* | *4.98 / 7.42 / 7.35* | *3.14 / 2.97 / 3.06* | *46 / 35 / 34* | *−3%* |
+| fractal, seed 20260919 | 2.86 / 3.32 / 4.09 | 2.13 / 2.61 / 2.44 | 7.92 / 7.64 / 7.02 | 92 / 93 / 86 | 2.40 / 0.60 / 25% |
+| *fractal, 20260906* | *3.97 / 6.71 / 7.53* | *2.53 / 3.84 / 3.53* | *7.82 / 7.92 / 7.85* | *97 / 90 / 86* | *13%* |
+
+Best-fitness gain per 50-generation block, and the last generation at which the best moved by more than 0.05:
+
+| arm | 0–50 | 50–100 | 100–150 | 150–200 | 200–250 | 250–299 | last gain |
+|---|---|---|---|---|---|---|---|
+| flat, 20260919 | +2.09 | +0.86 | +1.07 | +0.11 | +0.00 | +0.01 | 151 |
+| flat, 20260920 | +5.22 | +1.63 | +0.10 | +0.12 | +0.23 | +0.12 | 235 |
+| rough, 20260919 | +2.22 | +3.34 | +1.17 | +0.97 | +0.59 | +0.01 | 232 |
+| fractal, 20260919 | +1.12 | +0.14 | +0.43 | +0.12 | +0.08 | +0.15 | 285 |
+
+**The flat arm on seed 20260919 never learned to walk.** Median heading progress at generation 299 is 0.48 m; the 1.95 median fitness is mostly the upright bonus, which pays 1.6 for standing still for eight seconds. The population went to eight-part bodies by generation 40 — the opposite of the two-part sweep on seed 20260906 — and held 80–97 distinct structures throughout, because nothing fit enough to sweep ever appeared. Its champion is real (4.87 m, 0% free) but barely heritable: at generation 299 only 3 of 100 organisms score above 6 and 30 score below 1, against 59 and 10 on the reference seed. Three checks locate the failure:
+
+| check | result |
+|---|---|
+| rough-evolved population of the same seed, scored on flat | best 9.01, median 2.81 — above the flat arm's own 6.48 / 1.98 after 300 generations |
+| seed-20260906 flat population, scored under seed-20260919 trials | best 11.12, median 9.32 — the trial set is not harder |
+| seed-20260919 flat population, scored under seed-20260906 trials | best 6.73, median 2.04 — the deficit travels with the population |
+
+So flat ground is not a ceiling on this seed; it is a search that failed from these founders. Seed 20260920 found a gait (median 7.77 at generation 99) and reached 9.83, still short of 12.75. Three seeds on the same flat plane: 12.75, 9.83, 6.48.
+
+**Rough beats flat on seed 20260919** — 10.40 against 6.48, and the rough arm was still improving at generation 232 where the reference stopped near 150. The "scores fall monotonically with difficulty" reading from the table above therefore does not hold in general; what holds across both seeds is that the fractal arm scores lowest and improves longest.
+
+**The fractal arm is not the downhill population it was.** On seed 20260906 every organism ended lower than it started by generation 149 and fitness correlated with elevation change at −0.60, deepening to −0.75. On seed 20260919 the correlation is **+0.82** at generation 299, heading progress alone correlates with elevation change at +0.81, only 30 of 100 end lower, and 29 rather than 73 of 100 spend less than seven seconds upright. This population stays on its feet and travels a median of 0.95 m against the reference's 7.22 m. The entrenched downhill bias was a property of one lineage, not of the ground: distance on sloped ground *can* pay for descent, but it takes a population that has found a gait first.
+
+**What holds on both seeds.** The corpse gate, on every arm at every depth. Fractal bodies larger than rough bodies at every generation, and the fractal arm keeping the most distinct structures. The fractal population improving longest. And the shape of the transfer matrix — every cell a fresh `evo evaluate` under seed 20260919, median fitness:
+
+| evolved on | in flat | in fractal | in rough |
+|---|---|---|---|
+| naive founders | 1.31 | 0.88 | 1.12 |
+| flat | **1.98** | 0.58 | 1.21 |
+| fractal | 2.94 | **2.47** | 2.93 |
+| rough | 2.81 | 1.33 | **3.13** |
+
+The fractal population scores higher abroad than at home (1.19× on flat, 1.18× on rough), as it did on seed 20260906; the flat population keeps 30% of its home median on fractal, against 25% before. The rough population loses most in the one-mutation checkpoint step (5.66 in its last scored generation, 3.13 when its checkpoint is scored fresh), where the flat and fractal arms lose nothing — the rough gait on this seed is the fragile one under mutation.
+
+**What does not hold.** Every magnitude. The flat sweep to two parts, and with it "easy ground selects small bodies" (seed 20260920 held four parts throughout; seed 20260919 went to eight). Flat above rough. The plateau generations, which land sixty to eighty generations later here. The downhill bias on fractal ground.
+
+**Read as a method finding.** Two seeds disagree by a factor of two on the flat plane and invert the flat/rough ordering; a third splits the difference. The transfer tutorials' "three seeds is where a finding starts to earn the word" is the right bar, and by it the only earned findings in this document are the corpse gate, the fractal population's generality and the flat population's fragility. Everything stated as a number should be read as one sample until its spread across seeds is known.
 
 ---
 

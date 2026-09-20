@@ -240,7 +240,7 @@ What is implemented today:
 
 Open work: beacons, discrete obstacles, tasks other than travelling, beacon/camera sensors, recording sensor readings, the `HEIGHT` input audit, evolved network topology, cloud infrastructure. See [ROADMAP.md](ROADMAP.md).
 
-A longer replicated run is still wanted before the part-count result from the terrain A/B comparison is treated as established.
+The terrain A/B has been replicated on two further seeds at 300 generations. The corpse gate and the transfer shape held; the magnitudes, the flat-beats-rough ordering and the flat two-part sweep did not. See [RESULTS.md](RESULTS.md).
 
 ## License
 
