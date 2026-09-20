@@ -1,6 +1,6 @@
 # EvoForge — Measured Results
 
-This document records findings from actual runs. All figures come from the experiments and probes named; rerun them before trusting specific numbers — the probes are in [examples/](examples/) and the configurations are in [experiments/](experiments/).
+This document records findings from actual runs. All figures come from the experiments and probes named; rerun them before trusting specific numbers — the probes are in [examples/](../examples) and the configurations are in [experiments/](../experiments).
 
 For how to interpret findings versus faults see [ROADMAP.md](ROADMAP.md). For the configuration knobs that produced each experiment see [CONFIG.md](CONFIG.md).
 
@@ -22,7 +22,7 @@ Both faults have occurred here and both were fixed at the level they occurred. T
 
 Note what none of those did: none of them made a behaviour illegal. An organism may still fling a limb, still ride a slope down, still commit everything to one launch. Those score what they genuinely earn under the objective in force.
 
-The diagnostic tools in [examples/](examples/) exist to make the distinction decidable rather than arguable:
+The diagnostic tools in [examples/](../examples) exist to make the distinction decidable rather than arguable:
 
 | Tool | Question it answers |
 |---|---|
@@ -208,7 +208,7 @@ The fractal arm was extended to generation 150 to find out whether it plateaus, 
 
 **A subtler bias entrenched instead, and kept deepening.** At generation 149 every organism in the population ends lower than it started — 100 of 100, spanning −0.010 to −0.725 m — and fitness correlates with elevation change at **−0.60**. At generation 29 that correlation was −0.15; by generation 299 it is **−0.75**, with 99 of 100 organisms still ending lower than they started. The bias goes on strengthening for ninety generations after best fitness has stopped moving, which is the clearest sign available that it is the objective being satisfied rather than the search still working. So while the obvious downhill strategy was disappearing, selection under a pure distance objective was quietly getting *better* at travelling downhill: champions now cover about ten metres of ground per metre of height they give up, a ratio stable since generation 40.
 
-That is a specification finding rather than an optimisation one. Distance on sloped ground pays for descent, and 150 generations is long enough for that to become the population's defining characteristic. It is what [FITNESS_PLAN.md](FITNESS_PLAN.md) exists to address — not by penalising the behaviour, but by asking a question that elevation is part of the answer to.
+That is a specification finding rather than an optimisation one. Distance on sloped ground pays for descent, and 150 generations is long enough for that to become the population's defining characteristic. It is what [FITNESS_PLAN.md](plans/archive/FITNESS_PLAN.md) exists to address — not by penalising the behaviour, but by asking a question that elevation is part of the answer to.
 
 ---
 
@@ -266,7 +266,7 @@ Measured over 150 generations at `descent_penalty = 8`: a population converged o
 
 `fall_penalty` is the targeted replacement. It charges only for height given away *while no attached part is touching the ground* — the part of a descent the organism did not choose. Walking down a slope keeps contact and costs nothing; stepping off a terrace does not. That makes "do not fall" expressible without also making "do not go downhill" expressible. `falling_is_charged_where_walking_downhill_is_not` and `fall_penalty_does_not_reward_standing_still` are the gates.
 
-See [FITNESS_PLAN.md](FITNESS_PLAN.md) for the full calibration history.
+See [FITNESS_PLAN.md](plans/archive/FITNESS_PLAN.md) for the full calibration history.
 
 ---
 

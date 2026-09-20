@@ -1,8 +1,8 @@
 # Plan: a difficulty ramp for terrain
 
 Status: **proposed, not started.** Successor in spirit to
-[TERRAIN_PLAN_2.md](TERRAIN_PLAN_2.md), which built the terraced landscape this
-schedules. Sits under Phase 2 of [ROADMAP.md](ROADMAP.md) as an enabler: it does
+[TERRAIN_PLAN_2.md](archive/TERRAIN_PLAN_2.md), which built the terraced landscape this
+schedules. Sits under Phase 2 of [ROADMAP.md](../ROADMAP.md) as an enabler: it does
 not add a task, it changes when the existing one gets hard.
 
 Goal: start a population on ground that has the fractal field's *character* but

@@ -1,7 +1,7 @@
 # EvoForge roadmap
 
 What this project is building toward, in the order it intends to build it. For
-what exists today see [README.md](README.md); for why the code is shaped the way
+what exists today see [README.md](../README.md); for why the code is shaped the way
 it is, [ARCHITECTURE.md](ARCHITECTURE.md).
 
 This is a direction, not a schedule. Each phase names a seam that already exists
@@ -94,7 +94,7 @@ same blind spot affects `dead_organism_probe` above, and for the same reason —
 an organism that works its way to a lip and then falls is doing something no
 motors-off corpse can imitate.
 
-The diagnostic tools in [examples/](examples/) exist to make the distinction
+The diagnostic tools in [examples/](../examples) exist to make the distinction
 decidable rather than arguable, and they carry forward into every phase below:
 
 | Tool | Question it answers |
@@ -147,7 +147,7 @@ mutation; checkpoint, resume and extension; selective recording and exact
 re-simulation; a browser replay viewer with run-browser and terrain rendering.
 
 Two items carried forward from the terrain work, both stated in
-[TERRAIN_PLAN_2.md](TERRAIN_PLAN_2.md):
+[TERRAIN_PLAN_2.md](plans/archive/TERRAIN_PLAN_2.md):
 
 - **The terrain A/B has been rerun once, briefly.** The 80-generation comparison
   of sine against fractal ground was voided by the solver bug, which the fractal
@@ -179,7 +179,7 @@ Done:
 - **Widen `Metrics` where evaluation needs it.** Elevation gained and lost are
   recorded per organism: `net_gain`, `net_loss`, `climb`, `descent`,
   `fall_distance`. Five configurable fitness terms read them. See
-  [FITNESS_PLAN.md](FITNESS_PLAN.md) for the implementation and calibration.
+  [FITNESS_PLAN.md](plans/archive/FITNESS_PLAN.md) for the implementation and calibration.
 - **Re-scoring without re-simulating.** `evo rescore` re-weights any finished run
   from the command line — overriding any combination of climb/descent/fall/energy
   terms — without touching the physics. With no overrides it is a round trip and
@@ -238,7 +238,7 @@ in particular*.
   the other. Detection is a *signature* the same ray returns alongside distance,
   so no separate beacon sense exists and one organ perceives both ground and
   target. Beacons need no collision — they are markers, not walls — so this does
-  not wait on the discrete-obstacle work. See [SENSOR_PLAN.md](SENSOR_PLAN.md).
+  not wait on the discrete-obstacle work. See [SENSOR_PLAN.md](plans/archive/SENSOR_PLAN.md).
 
   **A beacon task and a large descent penalty are in direct conflict**, and the
   weights have to be settled before either is run. On a landscape with 5.6 m of
@@ -267,7 +267,7 @@ in particular*.
 answer — move a little, fall off something, stop — that is reachable in very few
 generations and caps out below real locomotion. Ramping the terrain's sharpness
 across a run, so a gait is established before that answer becomes available, is
-planned in [CURRICULUM_PLAN.md](CURRICULUM_PLAN.md). It is an enabler rather than
+planned in [CURRICULUM_PLAN.md](plans/CURRICULUM_PLAN.md). It is an enabler rather than
 a task: it changes when the existing objective gets hard, not what it asks for.
 The plan also settles why the config-digest check that blocks a staged resume
 should be left alone rather than given an escape hatch.
@@ -356,7 +356,7 @@ Done:
   function — no mesh, no transcendentals, full determinism. The sensor is carried
   by a part: it has mass, hangs off a joint, and is aimed by whatever drives that
   joint. `sensor_probability = 0` is exact; earlier results are unaffected. See
-  [SENSOR_PLAN.md](SENSOR_PLAN.md) for implementation notes and the 300-generation
+  [SENSOR_PLAN.md](plans/archive/SENSOR_PLAN.md) for implementation notes and the 300-generation
   comparison. `experiments/sensing-climbers.toml` ships the best settings found.
 
 Open:

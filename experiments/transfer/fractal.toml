@@ -2,9 +2,9 @@
 # organism-scale detail, calm and savage regions, and terraced cliffs.
 #
 # Identical to flat.toml except the terrain fields of [environment]. See
-# flat.toml for the family contract, and TUTORIALS.md for the experiments.
+# flat.toml for the family contract, and docs/TUTORIALS.md for the experiments.
 # With `terrain_seed` pinned to what seed 20260906 derives, this arm reproduces
-# the fractal run behind RESULTS.md's Terrain A/B table bit for bit.
+# the fractal run behind docs/RESULTS.md's Terrain A/B table bit for bit.
 
 [experiment]
 name = "transfer-fractal"

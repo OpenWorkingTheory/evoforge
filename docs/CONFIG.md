@@ -1,6 +1,6 @@
 # EvoForge — Experiment Configuration Guide
 
-This document covers everything that goes into a TOML experiment file. For measured results from real runs see [RESULTS.md](RESULTS.md). For the complete field list with types and defaults, read [`src/config.rs`](src/config.rs) — it is the canonical source and is always current.
+This document covers everything that goes into a TOML experiment file. For measured results from real runs see [RESULTS.md](RESULTS.md). For the complete field list with types and defaults, read [`src/config.rs`](../src/config/mod.rs) — it is the canonical source and is always current.
 
 The load-bearing rule throughout: **off is exact.** A feature disabled by setting its rate, probability, or weight to zero must not consume any randomness, must not change the controller's input count, and must not alter any other experiment's output. Enabling a new feature on an existing config is always a new experiment, not an extension of the old one.
 

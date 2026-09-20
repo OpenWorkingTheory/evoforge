@@ -1,7 +1,7 @@
 # EvoForge architecture
 
 This document records *why* the code is shaped the way it is, and where it is
-expected to change. For what the project is, see [README.md](README.md); for
+expected to change. For what the project is, see [README.md](../README.md); for
 where it is going and in what order, [ROADMAP.md](ROADMAP.md).
 
 ## The three properties everything else follows from

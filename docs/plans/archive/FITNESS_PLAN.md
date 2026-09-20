@@ -1,6 +1,6 @@
 # Plan: fitness beyond distance
 
-Status: **built, stages 1-6.** This is Phase 1 of [ROADMAP.md](ROADMAP.md) —
+Status: **built, stages 1-6.** This is Phase 1 of [ROADMAP.md](../../ROADMAP.md) —
 "widen `Metrics` where evaluation needs it" — done for its first two cases.
 
 What landed, against the staging in §10:
@@ -77,9 +77,9 @@ Three things:
 * **elevation gained**, weighted above distance covered;
 * **elevation lost**, penalised.
 
-A note on framing, because [ROADMAP.md](ROADMAP.md) says the project does not add
+A note on framing, because [ROADMAP.md](../../ROADMAP.md) says the project does not add
 penalties to suppress strategies, and a descent penalty will certainly suppress
-the fall-and-stop organisms of [CURRICULUM_PLAN.md](CURRICULUM_PLAN.md) §0.
+the fall-and-stop organisms of [CURRICULUM_PLAN.md](../CURRICULUM_PLAN.md) §0.
 
 That is a side effect, not the justification. What is being built here is a
 *different question* — "get higher", rather than "get further" — and the roadmap

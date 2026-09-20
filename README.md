@@ -51,7 +51,7 @@ The direction is to make the evaluation system capable of asking harder question
 
 > evolved locomotion → richer evaluation → varied environments and tasks → sensors → bodies, controllers and environments under selection together
 
-[ROADMAP.md](ROADMAP.md) sets that out in phases, each anchored to a seam that already exists in the code. Elevation metrics and the first lidar-like range sensor are now part of Phase 0; the open phases start from beacons and multi-task experiments.
+[ROADMAP.md](docs/ROADMAP.md) sets that out in phases, each anchored to a seam that already exists in the code. Elevation metrics and the first lidar-like range sensor are now part of Phase 0; the open phases start from beacons and multi-task experiments.
 
 ## What EvoForge Is Not
 
@@ -128,7 +128,7 @@ The rest of the examples use the Unix form; on Windows substitute `.\target\rele
 ./target/release/evo run experiments/fractal-animals.toml
 
 # Score a population somewhere it did not evolve, without evolving it further —
-# then carry it there. A run directory is a population. See TUTORIALS.md.
+# then carry it there. A run directory is a population. See docs/TUTORIALS.md.
 ./target/release/evo evaluate experiments/transfer/fractal.toml --founders runs/transfer-flat-<timestamp>
 ./target/release/evo run experiments/transfer/fractal.toml --founders runs/transfer-flat-<timestamp>
 
@@ -194,28 +194,33 @@ An organism's controller receives proprioceptive inputs — orientation, velocit
 
 **The rule that governs external sensors: anything an organism knows about the world outside its own body must arrive through a sensor with a position and an orientation on that body.** World information is never handed to the controller as a free input.
 
-A lidar-like range sensor (a fan of rays cast from a mounted part, returning distance to the terrain) is implemented and documented in [SENSOR_PLAN.md](SENSOR_PLAN.md). Try it with `experiments/sensing-climbers.toml`. Beacons, camera-like sensors, and recording of sensor readings remain open work; see [ROADMAP.md](ROADMAP.md) Phase 3.
+A lidar-like range sensor (a fan of rays cast from a mounted part, returning distance to the terrain) is implemented and documented in [SENSOR_PLAN.md](docs/plans/archive/SENSOR_PLAN.md). Try it with `experiments/sensing-climbers.toml`. Beacons, camera-like sensors, and recording of sensor readings remain open work; see [ROADMAP.md](docs/ROADMAP.md) Phase 3.
 
 ## Documentation
 
+Guides live in [docs/](docs/); lab notes in [docs/plans/](docs/plans/), with finished ones under [docs/plans/archive/](docs/plans/archive/).
+
 | File | What it covers |
 |---|---|
-| [TUTORIALS.md](TUTORIALS.md) | Guided experiments: two worlds, swapping them, breeding populations, adapting the hybrids, a sequence of environments |
-| [RESULTS.md](RESULTS.md) | Measured findings: terrain A/B, corpse gate, sensor arms, Baumgarte leak, climb calibration |
-| [CONFIG.md](CONFIG.md) | Full experiment configuration guide with worked TOML examples |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Design rationale: purity, determinism, module map, replaceable seams |
-| [ROADMAP.md](ROADMAP.md) | Phases, open questions, and the through-line |
+| [TUTORIALS.md](docs/TUTORIALS.md) | Guided experiments: two worlds, swapping them, breeding populations, adapting the hybrids, a sequence of environments |
+| [RESULTS.md](docs/RESULTS.md) | Measured findings: terrain A/B, corpse gate, sensor arms, Baumgarte leak, climb calibration |
+| [CONFIG.md](docs/CONFIG.md) | Full experiment configuration guide with worked TOML examples |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Design rationale: purity, determinism, module map, replaceable seams |
+| [ROADMAP.md](docs/ROADMAP.md) | Phases, open questions, and the through-line |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to build, test, and add experiments or probes |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and artifact-format breaks |
-| [SENSOR_PLAN.md](SENSOR_PLAN.md) | Range sensor design, implementation, and results |
-| [FITNESS_PLAN.md](FITNESS_PLAN.md) | Elevation fitness design, calibration notes, and `fall_penalty` |
-| [CURRICULUM_PLAN.md](CURRICULUM_PLAN.md) | Proposed difficulty ramp (not yet started) |
+| [CURRICULUM_PLAN.md](docs/plans/CURRICULUM_PLAN.md) | Proposed difficulty ramp (not yet started) |
+| [SUMMIT_PLAN.md](docs/plans/SUMMIT_PLAN.md) | Proposed mountain environment and climb objective (not yet started) |
+| [SENSOR_PLAN.md](docs/plans/archive/SENSOR_PLAN.md) | Range sensor design, implementation, and results (built) |
+| [FITNESS_PLAN.md](docs/plans/archive/FITNESS_PLAN.md) | Elevation fitness design, calibration notes, and `fall_penalty` (built) |
+| [TRANSFER_PLAN.md](docs/plans/archive/TRANSFER_PLAN.md) | Populations moving between environments: `--founders`, `evo evaluate` (built) |
+| [TERRAIN_PLAN_2.md](docs/plans/archive/TERRAIN_PLAN_2.md), [TERRAIN_PLAN.md](docs/plans/archive/TERRAIN_PLAN.md) | Fractal terrain and the solver fix it forced (historical) |
 
 Diagnostic probes live in [examples/](examples/). They are observation instruments — `dead_organism_probe`, `leak_probe`, `refine_probe`, `terrain_probe`, `drift_probe`, `conveyor_probe`, `energy_probe`, `friction_probe`, `sensor_probe`, `terrain_samples`, `golden_probe` — each answering one question about whether what was measured was real.
 
 ## Project Status
 
-**Phase 0 of [ROADMAP.md](ROADMAP.md) is complete: the pipeline works end to end, evolution demonstrably occurs, and it reproduces bit for bit.**
+**Phase 0 of [ROADMAP.md](docs/ROADMAP.md) is complete: the pipeline works end to end, evolution demonstrably occurs, and it reproduces bit for bit.**
 
 A first run of `experiments/first-walkers.toml` — 100 organisms, 100 generations, seventeen seconds of wall clock — took best fitness from 0.79 m to 4.76 m and the *median* from 0.08 m to 3.20 m, with 77 of 100 morphologies still distinct. The rising median is the part that matters.
 
@@ -238,9 +243,9 @@ What is implemented today:
 * Selective recording and exact re-simulation of any stored genome
 * A browser replay viewer with run-browser, sorting, grouping, and terrain rendering
 
-Open work: beacons, discrete obstacles, tasks other than travelling, beacon/camera sensors, recording sensor readings, the `HEIGHT` input audit, evolved network topology, cloud infrastructure. See [ROADMAP.md](ROADMAP.md).
+Open work: beacons, discrete obstacles, tasks other than travelling, beacon/camera sensors, recording sensor readings, the `HEIGHT` input audit, evolved network topology, cloud infrastructure. See [ROADMAP.md](docs/ROADMAP.md).
 
-The terrain A/B has been replicated on two further seeds at 300 generations. The corpse gate and the transfer shape held; the magnitudes, the flat-beats-rough ordering and the flat two-part sweep did not. See [RESULTS.md](RESULTS.md).
+The terrain A/B has been replicated on two further seeds at 300 generations. The corpse gate and the transfer shape held; the magnitudes, the flat-beats-rough ordering and the flat two-part sweep did not. See [RESULTS.md](docs/RESULTS.md).
 
 ## License
 

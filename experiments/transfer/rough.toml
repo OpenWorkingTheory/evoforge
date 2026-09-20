@@ -1,7 +1,7 @@
 # The rough arm of the transfer family: a 5 cm sine ripple every 1.6 m.
 #
 # Identical to flat.toml except `environment.terrain`. See flat.toml for the
-# family contract, and TUTORIALS.md for the experiments. Rough is the third
+# family contract, and docs/TUTORIALS.md for the experiments. Rough is the third
 # ground in the tutorials — the one neither population evolved in.
 
 [experiment]

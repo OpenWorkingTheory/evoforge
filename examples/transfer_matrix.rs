@@ -23,7 +23,7 @@
 //!
 //! Rows marked `*` come from directories that evolved for more than one
 //! generation; their figures are the *last* generation's and are not the same
-//! measurement as an `evo evaluate` cell. See RESULTS.md on the checkpoint
+//! measurement as an `evo evaluate` cell. See docs/RESULTS.md on the checkpoint
 //! offset for why the two should not be mixed in one table.
 
 use std::collections::BTreeMap;

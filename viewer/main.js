@@ -2,7 +2,7 @@
 //
 // Reads one recorded replay JSON and draws it. It never simulates: the genome in
 // the file is metadata, and every pose shown here came off disk. See
-// ARCHITECTURE.md property 3 ("Nothing renders") — this is the other half of
+// docs/ARCHITECTURE.md property 3 ("Nothing renders") — this is the other half of
 // that split, the part that renders and does not simulate.
 //
 // Pose layout, from src/sim.rs: poses.length === bodies.length * 7, and for body

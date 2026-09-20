@@ -1,6 +1,6 @@
 # Plan: the first sensor
 
-Status: **built, stages 1-3.** Phase 3 of [ROADMAP.md](ROADMAP.md), which this
+Status: **built, stages 1-3.** Phase 3 of [ROADMAP.md](../../ROADMAP.md), which this
 plan covers only the first entry of: a lidar-like range sense against the ground.
 
 What landed, against the staging in §4:
@@ -101,7 +101,7 @@ fan of two or three rays, and note this as another thing recurrence would unlock
 through a sensor with a position and an orientation on that body.** World
 information is never handed to the controller as a free input.
 
-This is stated in full in [ROADMAP.md](ROADMAP.md) under *Sensing must be
+This is stated in full in [ROADMAP.md](../../ROADMAP.md) under *Sensing must be
 sensed*, and it is repeated here because it is the constraint that makes this
 plan more expensive than it would otherwise be, and because the cheap violation
 is always available and always tempting.

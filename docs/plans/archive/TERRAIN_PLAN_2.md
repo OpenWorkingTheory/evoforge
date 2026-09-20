@@ -3,9 +3,9 @@
 > **Historical record.** This is a completed plan, kept for the reasoning and the
 > measurements in it. The A/B of §8 stage 7 has since been run at 30 generations
 > across three grounds, and the ordering it was meant to establish now holds —
-> see "What each ground selects for" in [README.md](README.md). The discrete
+> see "What each ground selects for" in [README.md](../../../README.md). The discrete
 > obstacles of §5 were never built. Both are carried forward into
-> [ROADMAP.md](ROADMAP.md), which is where current direction lives.
+> [ROADMAP.md](../../ROADMAP.md), which is where current direction lives.
 
 Status: **built, stages 1-6.** Successor to [TERRAIN_PLAN.md](TERRAIN_PLAN.md),
 which built `TerrainModel::Fractal`.

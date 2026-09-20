@@ -1,10 +1,10 @@
 # Plan: populations that move between environments
 
 Status: **built, all seven stages.** Sits under Phase 2 of
-[ROADMAP.md](ROADMAP.md) — varied environments — as the experiment that makes
+[ROADMAP.md](../../ROADMAP.md) — varied environments — as the experiment that makes
 the phase's point visible. The mechanism is small and finished; the five
-tutorials were run and are written up in [TUTORIALS.md](TUTORIALS.md), with the
-measured findings summarised in [RESULTS.md](RESULTS.md). What remains open is
+tutorials were run and are written up in [TUTORIALS.md](../../TUTORIALS.md), with the
+measured findings summarised in [RESULTS.md](../../RESULTS.md). What remains open is
 replication across seeds, which is a loop over `--seed`, not a feature.
 
 Goal: make `environment → selection pressure → differential fitness →
@@ -41,7 +41,7 @@ The resume path could not be the answer. It refuses any change to the
 evolution digest, and `[environment]`, `[fitness]` and the seed are all in it —
 correctly, since a resumed run must mean what its checkpoint meant. Carrying a
 population into a new environment is a new run, not a continuation, and
-CLAUDE.md's "no escape hatch for a changed fingerprint" stands untouched.
+[CLAUDE.md](../../../CLAUDE.md)'s "no escape hatch for a changed fingerprint" stands untouched.
 
 ## 2. What was built
 
@@ -83,7 +83,7 @@ legitimate things to vary.
 population × environment table, raw and relative to each population's home.
 
 **`experiments/transfer/{flat,rough,fractal,mating}.toml`** — the Terrain A/B
-arms from RESULTS.md renamed, identical outside `[environment]`, with
+arms from [RESULTS.md](../../RESULTS.md) renamed, identical outside `[environment]`, with
 `terrain_seed` pinned to the value seed 20260906 derives so the fractal arm
 stays byte-identical to the runs behind the documented table while `--seed`
 replicates can no longer move the ground.
@@ -150,7 +150,7 @@ A first-generation hybrid is any organism whose two `parents` trace, through
 | 4 | `evo evaluate` | one stats row, every genome stored, no checkpoint, each genome re-evaluates to its record, output chains into `--founders` |
 | 5 | `transfer_matrix` probe | — |
 | 6 | `inspect` provenance, `verify --founders` | CLI test |
-| 7 | environment family, five tutorials run and written up | TUTORIALS.md, RESULTS.md |
+| 7 | environment family, five tutorials run and written up | [TUTORIALS.md](../../TUTORIALS.md), [RESULTS.md](../../RESULTS.md) |
 
 Stages 1–6 added fifteen tests (262 in all), left `tests/golden.rs` byte-identical,
 and passed the four CI gates at every step.

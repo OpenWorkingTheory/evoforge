@@ -6,7 +6,7 @@
 # body limits and controller layout match, and holding everything else fixed is
 # what makes a fitness difference attributable to the ground and nothing else.
 #
-# These are the Terrain A/B arms from RESULTS.md, renamed. Seed 20260906 gives
+# These are the Terrain A/B arms from docs/RESULTS.md, renamed. Seed 20260906 gives
 # every arm the same hundred founders, and every organism in an arm meets the
 # same three trials. Do not change a value here without changing it in all four
 # files.
@@ -14,7 +14,7 @@
 #   evo run experiments/transfer/flat.toml
 #   evo evaluate experiments/transfer/fractal.toml --founders runs/transfer-flat-<ts>
 #
-# See TUTORIALS.md for the experiments these support.
+# See docs/TUTORIALS.md for the experiments these support.
 
 [experiment]
 name = "transfer-flat"
@@ -106,7 +106,7 @@ terrain_amplitude = 0.05
 terrain_wavelength = 1.6
 # Pinned in every arm so that `--seed` replicates move the founders and the
 # trials but never the ground. This is the value seed 20260906 derives, which
-# keeps the fractal arm byte-identical to the runs behind RESULTS.md.
+# keeps the fractal arm byte-identical to the runs behind docs/RESULTS.md.
 terrain_seed = 183821489130240734
 terrain_octaves = 4
 terrain_lacunarity = 2.0

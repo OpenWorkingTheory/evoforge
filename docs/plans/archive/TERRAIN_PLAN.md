@@ -5,8 +5,8 @@
 > [TERRAIN_PLAN_2.md](TERRAIN_PLAN_2.md), and the A/B comparison it voided has
 > since been rerun at 30 generations across three grounds — scores now fall
 > monotonically with difficulty, and the corpse gate passes on every arm. See
-> "What each ground selects for" in [README.md](README.md) for the figures, and
-> [ROADMAP.md](ROADMAP.md) for where the project is going now.
+> "What each ground selects for" in [README.md](../../../README.md) for the figures, and
+> [ROADMAP.md](../../ROADMAP.md) for where the project is going now.
 
 Status: **built, stages 1-4 and the experiment file. Run — and the run found a
 pre-existing bug in the simulator that invalidates the comparison.**
@@ -55,7 +55,7 @@ Worth being precise about what kind of problem this was. It is not an organism
 finding an unanticipated strategy inside the rules — that is a result, and this
 project keeps those. It is the simulator failing to implement the physics it
 claims to: a body was gaining momentum nothing supplied. See the taxonomy in
-[ROADMAP.md](ROADMAP.md).
+[ROADMAP.md](../../ROADMAP.md).
 
 The A/B is therefore void as a terrain comparison and has to be rerun after the
 solver is fixed. The standard fix is a split-impulse pass: accumulate the
@@ -120,7 +120,7 @@ result.
 
 ## 1. What exists today
 
-`TerrainModel` in [src/physics/world.rs](src/physics/world.rs) has two variants,
+`TerrainModel` in [src/physics/world.rs](../../../src/physics/world/mod.rs) has two variants,
 `Flat` and `Rough`. `Rough` is two octaves of a separable sine field:
 
 ```
@@ -174,12 +174,12 @@ No permutation table, no `Vec` of octaves. A handful of scalars.
 
 **`height_at` is in the innermost loop.** Call sites:
 
-* [world.rs:729](src/physics/world.rs) — per ground point per body per step (up
+* [world.rs:729](../../../src/physics/world/mod.rs) — per ground point per body per step (up
   to 8 points per body)
-* [world.rs:726](src/physics/world.rs) and [world.rs:734](src/physics/world.rs) —
+* [world.rs:726](../../../src/physics/world/mod.rs) and [world.rs:734](../../../src/physics/world/mod.rs) —
   `normal_at` once per body *and* once per contact point
-* [world.rs:529](src/physics/world.rs) — `ground_clearance`, per point per step
-* [phenotype.rs:525](src/phenotype.rs) — spawn placement, once per build
+* [world.rs:529](../../../src/physics/world/mod.rs) — `ground_clearance`, per point per step
+* [phenotype.rs:525](../../../src/phenotype.rs) — spawn placement, once per build
 
 Note the redundancy already present: each contact point costs one `height_at`
 **and** one `normal_at`. A combined `sample(x, z) -> (height, Vec3)` would halve
@@ -201,7 +201,7 @@ h(x,z) = A · Σᵢ gainⁱ · noise(seed, p · lacunarityⁱ / wavelength)
 ```
 
 **Gradients by hashing, not by table.** Hash the integer lattice coordinates with
-`splitmix64` (already in [src/rng.rs](src/rng.rs)) mixed with the seed, and index
+`splitmix64` (already in [src/rng.rs](../../../src/rng.rs)) mixed with the seed, and index
 a fixed set of 8 or 16 unit vectors. No table means the model stays `Copy`; a
 `u64` seed plus six scalars is about 40 bytes.
 
@@ -229,7 +229,7 @@ recovers much of it.
 ## 5. Layer 2 — per-trial variation
 
 Offset and rotate the field per trial, derived from the trial seed
-(`TRIAL_STREAM` in [src/sim.rs](src/sim.rs) already exists for this kind of
+(`TRIAL_STREAM` in [src/sim.rs](../../../src/sim.rs) already exists for this kind of
 thing). Nearly free, and it closes the memorisation hole in §2.
 
 ## 6. Layer 3 — obstacles (deferred, and the honest part)
@@ -246,7 +246,7 @@ seeded static bodies — rocks, ledges, logs.
 
 Most of the machinery exists. Self-collision already does capsule-capsule
 two-body contacts (`build_pair_contacts` / `solve_pair_contacts` in
-[world.rs](src/physics/world.rs)); a static obstacle is the same constraint with
+[world.rs](../../../src/physics/world/mod.rs)); a static obstacle is the same constraint with
 `inv_mass = 0`. The care needed is keeping obstacles out of everything that
 assumes a body belongs to the organism — `centre_of_mass`, `body_slots`,
 `detached`, the spawn drop — which argues for a separate `obstacles` list rather
@@ -258,7 +258,7 @@ is not enough.**
 ## 7. Viewer strategy
 
 The viewer currently **mirrors the sine formula in JavaScript**
-(`terrainHeight` in [viewer/main.js](viewer/main.js), around line 75). That was
+(`terrainHeight` in [viewer/main.js](../../../viewer/main.js), around line 75). That was
 flagged as a drift risk when it was written. For multi-octave hashed noise it
 would be a much worse one: get the hash subtly wrong and the viewer draws a
 completely different world, with organisms apparently floating.
@@ -287,12 +287,12 @@ added so far follows the same pattern, and this one must too:
   `"rough"` must behave bit-identically to today. New parameters must not be
   drawn, hashed or folded in unless the new terrain is selected.
 * **Guard the config digest.** Fold the new fields into `fingerprint()` in
-  [src/config.rs](src/config.rs) **only when `terrain = "fractal"`**, exactly as
+  [src/config.rs](../../../src/config/mod.rs) **only when `terrain = "fractal"`**, exactly as
   `uses_shapes`, `joints_can_break` and the tendon and steer guards already do.
   Otherwise every existing run directory stops being resumable.
 * **`tests/golden.rs` must pass with its constants untouched.** If a golden
   moves, the change is wrong — not the constant.
-* **Bump `ARTIFACT_FORMAT`** in [src/record.rs](src/record.rs) (currently 5) and
+* **Bump `ARTIFACT_FORMAT`** in [src/record.rs](../../../src/record.rs) (currently 5) and
   add a history line. `Trace::terrain` is a tagged enum, so a new variant needs a
   viewer fallback for unknown kinds.
 
@@ -310,7 +310,7 @@ against itself:
   lattice points, at the origin, or at negative coordinates (a common hashing
   bug is asymmetry about zero).
 * **Spawn placement**: `a_shaped_organism_also_sits_on_the_ground` and friends in
-  [src/phenotype.rs](src/phenotype.rs) should be extended to fractal terrain —
+  [src/phenotype.rs](../../../src/phenotype.rs) should be extended to fractal terrain —
   every organism must still start exactly `SPAWN_CLEARANCE` above the surface.
 * **Statistical character**: measure peak-to-trough and the slope distribution as
   in §1, so the config parameters can be documented with real numbers rather than

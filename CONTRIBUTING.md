@@ -58,7 +58,7 @@ Document what you expected, what you observed, and whether the corpse gate passe
 cargo run --release --example dead_organism_probe -- runs/<your-run>
 ```
 
-See [RESULTS.md](RESULTS.md) for what "the corpse gate passes" means and why it matters. The gate can only measure an experiment whose `body.joint_endurance` is non-zero; on any other config the probe says so rather than printing a number.
+See [RESULTS.md](docs/RESULTS.md) for what "the corpse gate passes" means and why it matters. The gate can only measure an experiment whose `body.joint_endurance` is non-zero; on any other config the probe says so rather than printing a number.
 
 Keep your run. A finished run directory is a regression fixture — its `config.toml` is fully resolved and evaluation is pure — so anyone can later check a new build against it:
 

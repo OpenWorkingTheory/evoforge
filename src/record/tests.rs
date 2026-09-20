@@ -292,7 +292,7 @@ fn recording_selection_respects_the_policy() {
 }
 
 /// `gen_{:06}` stops being lexicographically ordered past a million
-/// generations, which ARCHITECTURE.md explicitly contemplates. Ordering must
+/// generations, which docs/ARCHITECTURE.md explicitly contemplates. Ordering must
 /// come from the number, not the string, or a resume silently loads an older
 /// population.
 #[test]

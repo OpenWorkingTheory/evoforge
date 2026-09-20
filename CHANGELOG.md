@@ -29,6 +29,6 @@ Re-score any finished run from the command line. Overrides: `--climb-bonus`, `--
 - `air_bonus`, `height_bonus`, `fall_penalty` fitness terms.
 - Viewer columns for net elevation, total ascent, total descent, joints lost, and caution.
 - `immigrant_rate` is now a configurable evolution parameter.
-- `baumgarte` default lowered from 0.2 to 0.05 (see [RESULTS.md](RESULTS.md)).
+- `baumgarte` default lowered from 0.2 to 0.05 (see [RESULTS.md](docs/RESULTS.md)).
 - Hand-written transcendentals in `src/math.rs` ensure platform-independent bitwise determinism.
 - CI matrix: Ubuntu, Windows, macOS; plus `evo verify` as a separate job.
